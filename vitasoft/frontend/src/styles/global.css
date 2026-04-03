@@ -1,0 +1,450 @@
+@import './variables.css';
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--gris-claro);
+  color: #333;
+  line-height: 1.5;
+}
+
+/* ======================== Layout ======================== */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 240px;
+  background-color: var(--azul-oscuro);
+  color: var(--blanco);
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+}
+
+.sidebar-logo {
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  padding: 0 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  letter-spacing: 1px;
+}
+
+.sidebar-nav {
+  list-style: none;
+  padding: 16px 0;
+  flex: 1;
+}
+
+.sidebar-nav li a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.sidebar-nav li a:hover,
+.sidebar-nav li a.active {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--blanco);
+}
+
+.sidebar-logout {
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.sidebar-logout button {
+  width: 100%;
+  padding: 10px;
+  background: rgba(220, 53, 69, 0.2);
+  color: var(--rojo);
+  border: 1px solid var(--rojo);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.sidebar-logout button:hover {
+  background: var(--rojo);
+  color: var(--blanco);
+}
+
+.main-content {
+  margin-left: 240px;
+  padding: 24px 32px;
+  flex: 1;
+  min-height: 100vh;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  font-size: 24px;
+  color: var(--azul-oscuro);
+}
+
+/* ======================== Cards ======================== */
+.card {
+  background: var(--blanco);
+  border-radius: var(--radius);
+  box-shadow: var(--sombra);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+/* ======================== Botones ======================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  font-size: 14px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--azul);
+  color: var(--blanco);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--azul-hover);
+}
+
+.btn-danger {
+  background-color: var(--rojo);
+  color: var(--blanco);
+}
+
+.btn-success {
+  background-color: var(--verde);
+  color: var(--blanco);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--borde);
+  color: var(--gris-medio);
+}
+
+.btn-outline:hover {
+  border-color: var(--azul);
+  color: var(--azul);
+}
+
+.btn-sm {
+  padding: 5px 12px;
+  font-size: 13px;
+}
+
+/* ======================== Forms ======================== */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--azul-oscuro);
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radius);
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--azul);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+}
+
+select.form-control {
+  appearance: auto;
+}
+
+/* ======================== Filtros ======================== */
+.filters-bar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 20px;
+}
+
+.filters-bar .form-group {
+  margin-bottom: 0;
+  min-width: 160px;
+}
+
+/* ======================== Tablas ======================== */
+.table-container {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+thead {
+  background-color: var(--azul-oscuro);
+  color: var(--blanco);
+}
+
+thead th {
+  padding: 12px 14px;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--borde);
+  transition: background 0.15s;
+}
+
+tbody tr:hover {
+  background-color: #EEF2FF;
+}
+
+tbody td {
+  padding: 10px 14px;
+}
+
+/* ======================== Badges ======================== */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-pendiente {
+  background: #FFF3CD;
+  color: #856404;
+}
+
+.badge-procesado {
+  background: #D4EDDA;
+  color: #155724;
+}
+
+.badge-eliminado {
+  background: #F8D7DA;
+  color: #721C24;
+}
+
+.badge-generado {
+  background: #D1ECF1;
+  color: #0C5460;
+}
+
+.badge-error {
+  background: #F8D7DA;
+  color: #721C24;
+}
+
+/* ======================== Drag & Drop ======================== */
+.dropzone {
+  border: 2px dashed var(--borde);
+  border-radius: var(--radius);
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: var(--blanco);
+}
+
+.dropzone:hover,
+.dropzone.active {
+  border-color: var(--azul);
+  background: #EEF2FF;
+}
+
+.dropzone-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  color: var(--gris-medio);
+}
+
+.dropzone p {
+  color: var(--gris-medio);
+  font-size: 14px;
+}
+
+.dropzone .filename {
+  margin-top: 12px;
+  font-weight: 600;
+  color: var(--azul-oscuro);
+}
+
+/* ======================== Alerts ======================== */
+.alert {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.alert-success {
+  background: #D4EDDA;
+  color: #155724;
+  border: 1px solid #C3E6CB;
+}
+
+.alert-error {
+  background: #F8D7DA;
+  color: #721C24;
+  border: 1px solid #F5C6CB;
+}
+
+.alert-info {
+  background: #D1ECF1;
+  color: #0C5460;
+  border: 1px solid #BEE5EB;
+}
+
+/* ======================== Modal ======================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--blanco);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 480px;
+  max-width: 90vw;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.modal h2 {
+  margin-bottom: 20px;
+  color: var(--azul-oscuro);
+  font-size: 18px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* ======================== Login ======================== */
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--azul-oscuro) 0%, #2C4270 100%);
+}
+
+.login-card {
+  background: var(--blanco);
+  padding: 40px;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  width: 400px;
+  max-width: 90vw;
+}
+
+.login-card h1 {
+  text-align: center;
+  color: var(--azul-oscuro);
+  margin-bottom: 8px;
+  font-size: 28px;
+}
+
+.login-card .subtitle {
+  text-align: center;
+  color: var(--gris-medio);
+  margin-bottom: 32px;
+  font-size: 14px;
+}
+
+.login-card .btn-primary {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+}
+
+/* ======================== Utilidades ======================== */
+.text-right {
+  text-align: right;
+}
+
+.text-muted {
+  color: var(--gris-medio);
+}
+
+.mt-2 {
+  margin-top: 8px;
+}
+
+.mb-3 {
+  margin-bottom: 16px;
+}
+
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: var(--blanco);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
