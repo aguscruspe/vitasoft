@@ -1,12 +1,9 @@
 package com.vitasoft.repository;
 
-import com.vitasoft.entity.Lote;
-import com.vitasoft.entity.enums.Banco;
+import com.vitasoft.model.Lote;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-import java.util.List;
-
+@Repository
 public interface LoteRepository extends JpaRepository<Lote, Long> {
-    List<Lote> findByEstado(String estado);
-    List<Lote> findByBanco(Banco banco);
 }

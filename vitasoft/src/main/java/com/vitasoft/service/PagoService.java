@@ -2,214 +2,130 @@ package com.vitasoft.service;
 
 import com.vitasoft.dto.ImportResultDTO;
 import com.vitasoft.dto.PagoRequest;
-import com.vitasoft.entity.Pago;
-import com.vitasoft.entity.Proveedor;
-import com.vitasoft.entity.enums.Banco;
-import com.vitasoft.entity.enums.EstadoPago;
+import com.vitasoft.model.Banco;
+import com.vitasoft.model.EstadoPago;
+import com.vitasoft.model.Pago;
+import com.vitasoft.model.Proveedor;
 import com.vitasoft.repository.PagoRepository;
-import com.vitasoft.repository.ProveedorRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PagoService {
 
     private final PagoRepository pagoRepository;
-    private final ProveedorRepository proveedorRepository;
+    private final ProveedorService proveedorService;
 
-    // -------------------------------------------------------
-    // Importar pagos desde Excel (.xlsx)
-    // Columnas: nombre proveedor | CUIT | CBU | monto | concepto | fecha de pago
-    // -------------------------------------------------------
-    @Transactional
-    public ImportResultDTO importarDesdeExcel(MultipartFile file) {
-        List<String> errores = new ArrayList<>();
-        int totalLeidos = 0;
-        int totalImportados = 0;
+    public List<Pago> buscar(EstadoPago estado, LocalDate desde, LocalDate hasta, Banco banco) {
+        return pagoRepository.buscarConFiltros(estado, desde, hasta, banco);
+    }
 
-        try (InputStream is = file.getInputStream();
-             Workbook workbook = new XSSFWorkbook(is)) {
+    public Pago obtener(Long id) {
+        return pagoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Pago no encontrado: " + id));
+    }
 
+    public Pago actualizar(Long id, PagoRequest request) {
+        Pago pago = obtener(id);
+        if (request.getProveedorId() != null) {
+            Proveedor prov = proveedorService.obtener(request.getProveedorId());
+            pago.setProveedor(prov);
+        }
+        if (request.getMonto() != null) pago.setMonto(request.getMonto());
+        if (request.getConcepto() != null) pago.setConcepto(request.getConcepto());
+        if (request.getFechaPago() != null) pago.setFechaPago(request.getFechaPago());
+        return pagoRepository.save(pago);
+    }
+
+    public void eliminar(Long id) {
+        Pago pago = obtener(id);
+        pago.setEstado(EstadoPago.ELIMINADO);
+        pagoRepository.save(pago);
+    }
+
+    /**
+     * Importa un archivo Excel con columnas:
+     *   nombre | cuit | cbu | monto | concepto | fechaPago (dd/MM/yyyy o serial de Excel)
+     * La primera fila se asume header y se descarta.
+     */
+    public ImportResultDTO importarExcel(MultipartFile archivo) {
+        ImportResultDTO result = new ImportResultDTO();
+        result.setMensajesError(new ArrayList<>());
+
+        try (Workbook workbook = WorkbookFactory.create(archivo.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
-            int lastRow = sheet.getLastRowNum();
+            Iterator<Row> rows = sheet.iterator();
+            if (rows.hasNext()) rows.next(); // skip header
 
-            for (int i = 1; i <= lastRow; i++) { // Fila 0 = encabezados
-                Row row = sheet.getRow(i);
-                if (row == null) continue;
-
-                totalLeidos++;
+            DataFormatter df = new DataFormatter();
+            int nroFila = 1;
+            while (rows.hasNext()) {
+                Row row = rows.next();
+                nroFila++;
                 try {
-                    String nombreProveedor = getStringCell(row, 0);
-                    String cuit = getStringCell(row, 1);
-                    String cbu = getStringCell(row, 2);
-                    BigDecimal monto = getNumericCell(row, 3);
-                    String concepto = getStringCell(row, 4);
-                    LocalDate fechaPago = getDateCell(row, 5);
+                    String nombre = df.formatCellValue(row.getCell(0)).trim();
+                    String cuit = df.formatCellValue(row.getCell(1)).trim();
+                    String cbu = df.formatCellValue(row.getCell(2)).trim();
+                    String montoStr = df.formatCellValue(row.getCell(3)).trim().replace(",", ".");
+                    String concepto = df.formatCellValue(row.getCell(4)).trim();
+                    Cell fechaCell = row.getCell(5);
 
-                    if (cuit == null || cuit.isBlank()) {
-                        errores.add("Fila " + (i + 1) + ": CUIT vacío");
-                        continue;
-                    }
-                    if (monto == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
-                        errores.add("Fila " + (i + 1) + ": monto inválido");
-                        continue;
+                    if (nombre.isEmpty() && cuit.isEmpty() && montoStr.isEmpty()) {
+                        continue; // fila vacía
                     }
 
-                    // Buscar o crear proveedor
-                    Proveedor proveedor = proveedorRepository.findByCuit(cuit)
-                            .orElseGet(() -> proveedorRepository.save(
-                                    Proveedor.builder()
-                                            .nombre(nombreProveedor != null ? nombreProveedor : "Sin nombre")
-                                            .cuit(cuit)
-                                            .cbu(cbu != null ? cbu : "")
-                                            .build()
-                            ));
-
-                    // Si el proveedor ya existía pero el CBU viene en el Excel, actualizarlo
-                    if (cbu != null && !cbu.isBlank() && (proveedor.getCbu() == null || proveedor.getCbu().isBlank())) {
-                        proveedor.setCbu(cbu);
-                        proveedorRepository.save(proveedor);
+                    if (montoStr.isEmpty()) {
+                        throw new IllegalArgumentException("Monto vacío");
                     }
 
+                    BigDecimal monto = new BigDecimal(montoStr);
+                    LocalDate fechaPago = null;
+                    if (fechaCell != null) {
+                        if (fechaCell.getCellType() == org.apache.poi.ss.usermodel.CellType.NUMERIC
+                                && org.apache.poi.ss.usermodel.DateUtil.isCellDateFormatted(fechaCell)) {
+                            fechaPago = fechaCell.getDateCellValue().toInstant()
+                                    .atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+                        } else {
+                            String s = df.formatCellValue(fechaCell).trim();
+                            if (!s.isEmpty()) {
+                                fechaPago = LocalDate.parse(s,
+                                        java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                            }
+                        }
+                    }
+
+                    Proveedor prov = proveedorService.buscarOCrear(nombre, cbu, cuit);
                     Pago pago = Pago.builder()
-                            .proveedor(proveedor)
+                            .proveedor(prov)
                             .monto(monto)
                             .concepto(concepto)
                             .estado(EstadoPago.PENDIENTE)
                             .fechaPago(fechaPago)
                             .build();
-
                     pagoRepository.save(pago);
-                    totalImportados++;
-
+                    result.setImportados(result.getImportados() + 1);
                 } catch (Exception e) {
-                    errores.add("Fila " + (i + 1) + ": " + e.getMessage());
+                    result.setErrores(result.getErrores() + 1);
+                    result.getMensajesError().add("Fila " + nroFila + ": " + e.getMessage());
                 }
             }
-
         } catch (Exception e) {
-            errores.add("Error al leer el archivo: " + e.getMessage());
-            log.error("Error importando Excel", e);
+            result.getMensajesError().add("Error procesando archivo: " + e.getMessage());
         }
-
-        return ImportResultDTO.builder()
-                .totalLeidos(totalLeidos)
-                .totalImportados(totalImportados)
-                .errores(errores)
-                .build();
-    }
-
-    // -------------------------------------------------------
-    // Listar con filtros opcionales
-    // -------------------------------------------------------
-    @Transactional(readOnly = true)
-    public List<Pago> listarConFiltros(EstadoPago estado, Banco banco, LocalDate desde, LocalDate hasta) {
-        return pagoRepository.filtrar(estado, banco, desde, hasta);
-    }
-
-    // -------------------------------------------------------
-    // Editar pago (ej: CBU faltante, monto, concepto)
-    // -------------------------------------------------------
-    @Transactional
-    public Pago actualizar(Long id, PagoRequest request) {
-        Pago pago = pagoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Pago no encontrado con id: " + id));
-
-        if (pago.getEstado() == EstadoPago.ELIMINADO) {
-            throw new IllegalStateException("No se puede editar un pago eliminado");
-        }
-
-        if (request.getProveedorId() != null) {
-            Proveedor proveedor = proveedorRepository.findById(request.getProveedorId())
-                    .orElseThrow(() -> new EntityNotFoundException("Proveedor no encontrado"));
-            pago.setProveedor(proveedor);
-        }
-        if (request.getMonto() != null) {
-            pago.setMonto(request.getMonto());
-        }
-        if (request.getConcepto() != null) {
-            pago.setConcepto(request.getConcepto());
-        }
-        if (request.getFechaPago() != null) {
-            pago.setFechaPago(request.getFechaPago());
-        }
-        // Permitir actualizar CBU del proveedor desde acá
-        if (request.getCbu() != null && !request.getCbu().isBlank()) {
-            pago.getProveedor().setCbu(request.getCbu());
-            proveedorRepository.save(pago.getProveedor());
-        }
-
-        return pagoRepository.save(pago);
-    }
-
-    // -------------------------------------------------------
-    // Eliminación lógica
-    // -------------------------------------------------------
-    @Transactional
-    public Pago eliminar(Long id) {
-        Pago pago = pagoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Pago no encontrado con id: " + id));
-
-        pago.setEstado(EstadoPago.ELIMINADO);
-        return pagoRepository.save(pago);
-    }
-
-    // -------------------------------------------------------
-    // Helpers para leer celdas del Excel
-    // -------------------------------------------------------
-    private String getStringCell(Row row, int col) {
-        Cell cell = row.getCell(col);
-        if (cell == null) return null;
-        if (cell.getCellType() == CellType.STRING) {
-            return cell.getStringCellValue().trim();
-        }
-        if (cell.getCellType() == CellType.NUMERIC) {
-            // CUIT/CBU pueden venir como número
-            long val = (long) cell.getNumericCellValue();
-            return String.valueOf(val);
-        }
-        return null;
-    }
-
-    private BigDecimal getNumericCell(Row row, int col) {
-        Cell cell = row.getCell(col);
-        if (cell == null) return null;
-        if (cell.getCellType() == CellType.NUMERIC) {
-            return BigDecimal.valueOf(cell.getNumericCellValue());
-        }
-        if (cell.getCellType() == CellType.STRING) {
-            String val = cell.getStringCellValue().trim().replace(",", ".");
-            return new BigDecimal(val);
-        }
-        return null;
-    }
-
-    private LocalDate getDateCell(Row row, int col) {
-        Cell cell = row.getCell(col);
-        if (cell == null) return null;
-        if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
-            return cell.getDateCellValue().toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate();
-        }
-        if (cell.getCellType() == CellType.STRING) {
-            return LocalDate.parse(cell.getStringCellValue().trim());
-        }
-        return null;
+        return result;
     }
 }

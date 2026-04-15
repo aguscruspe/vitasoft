@@ -1,39 +1,59 @@
 package com.vitasoft.controller;
 
 import com.vitasoft.dto.ProcesarLoteRequest;
-import com.vitasoft.entity.Lote;
+import com.vitasoft.model.ArchivoGenerado;
+import com.vitasoft.model.Lote;
 import com.vitasoft.service.LoteService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/lotes")
 @RequiredArgsConstructor
 public class LoteController {
 
     private final LoteService loteService;
 
-    /**
-     * POST /api/lotes/procesar
-     * Recibe lista de IDs de pagos y banco, crea el lote y genera archivos TXT + PDF.
-     */
-    @PostMapping("/procesar")
-    public ResponseEntity<Lote> procesar(@Valid @RequestBody ProcesarLoteRequest request) {
-        Lote lote = loteService.procesarLote(request.getPagoIds(), request.getBanco());
-        return ResponseEntity.status(HttpStatus.CREATED).body(lote);
+    @PostMapping("/api/lotes/procesar")
+    public ResponseEntity<Lote> procesar(@RequestBody ProcesarLoteRequest request) {
+        return ResponseEntity.ok(loteService.procesar(request));
     }
 
-    /**
-     * GET /api/lotes
-     * Lista todos los lotes generados con sus archivos.
-     */
-    @GetMapping
+    @GetMapping("/api/lotes")
     public ResponseEntity<List<Lote>> listar() {
-        return ResponseEntity.ok(loteService.listarTodos());
+        return ResponseEntity.ok(loteService.listar());
+    }
+
+    @GetMapping("/api/lotes/{id}")
+    public ResponseEntity<Lote> obtener(@PathVariable Long id) {
+        return ResponseEntity.ok(loteService.obtener(id));
+    }
+
+    @GetMapping("/archivos/{id}/descargar")
+    public ResponseEntity<Resource> descargar(@PathVariable Long id) {
+        ArchivoGenerado archivo = loteService.obtenerArchivo(id);
+        File file = new File(archivo.getRuta());
+        if (!file.exists()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Resource resource = new FileSystemResource(file);
+        MediaType mediaType = switch (archivo.getTipo()) {
+            case PDF -> MediaType.APPLICATION_PDF;
+            case TXT -> MediaType.TEXT_PLAIN;
+        };
+
+        return ResponseEntity.ok()
+                .contentType(mediaType)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + file.getName() + "\"")
+                .body(resource);
     }
 }

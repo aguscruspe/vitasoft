@@ -1,19 +1,16 @@
 package com.vitasoft.dto;
 
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import com.vitasoft.model.Banco;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ProcesarLoteRequest {
-
-    @NotEmpty(message = "Debe incluir al menos un pago")
+    private Banco banco;
     private List<Long> pagoIds;
-
-    @NotNull(message = "Debe seleccionar un banco")
-    private String banco;
 }

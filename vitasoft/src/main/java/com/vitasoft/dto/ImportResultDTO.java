@@ -1,17 +1,17 @@
 package com.vitasoft.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
-@Getter
+@Data
+@NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class ImportResultDTO {
-
-    private int totalLeidos;
-    private int totalImportados;
-    private List<String> errores;
+    private int importados;
+    private int errores;
+    private List<String> mensajesError = new ArrayList<>();
 }

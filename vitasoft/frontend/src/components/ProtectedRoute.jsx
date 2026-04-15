@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import authService from '../api/authService';
+import { authService } from '../services/authService';
 
 export default function ProtectedRoute({ children }) {
   if (!authService.isAuthenticated()) {

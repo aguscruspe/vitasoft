@@ -1,11 +1,9 @@
 package com.vitasoft.controller;
 
 import com.vitasoft.dto.ProveedorRequest;
-import com.vitasoft.entity.Proveedor;
+import com.vitasoft.model.Proveedor;
 import com.vitasoft.service.ProveedorService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,18 +18,22 @@ public class ProveedorController {
 
     @GetMapping
     public ResponseEntity<List<Proveedor>> listar() {
-        return ResponseEntity.ok(proveedorService.listarTodos());
+        return ResponseEntity.ok(proveedorService.listar());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Proveedor> obtener(@PathVariable Long id) {
+        return ResponseEntity.ok(proveedorService.obtener(id));
     }
 
     @PostMapping
-    public ResponseEntity<Proveedor> crear(@Valid @RequestBody ProveedorRequest request) {
-        Proveedor proveedor = proveedorService.crear(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(proveedor);
+    public ResponseEntity<Proveedor> crear(@RequestBody ProveedorRequest request) {
+        return ResponseEntity.ok(proveedorService.crear(request));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Proveedor> actualizar(@PathVariable Long id,
-                                                 @Valid @RequestBody ProveedorRequest request) {
+                                                @RequestBody ProveedorRequest request) {
         return ResponseEntity.ok(proveedorService.actualizar(id, request));
     }
 }

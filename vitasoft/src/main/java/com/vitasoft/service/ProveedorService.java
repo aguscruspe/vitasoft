@@ -1,12 +1,10 @@
 package com.vitasoft.service;
 
 import com.vitasoft.dto.ProveedorRequest;
-import com.vitasoft.entity.Proveedor;
+import com.vitasoft.model.Proveedor;
 import com.vitasoft.repository.ProveedorRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -16,29 +14,35 @@ public class ProveedorService {
 
     private final ProveedorRepository proveedorRepository;
 
-    @Transactional(readOnly = true)
-    public List<Proveedor> listarTodos() {
+    public List<Proveedor> listar() {
         return proveedorRepository.findAll();
     }
 
-    @Transactional
+    public Proveedor obtener(Long id) {
+        return proveedorRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Proveedor no encontrado: " + id));
+    }
+
     public Proveedor crear(ProveedorRequest request) {
-        Proveedor proveedor = Proveedor.builder()
+        Proveedor p = Proveedor.builder()
                 .nombre(request.getNombre())
                 .cbu(request.getCbu())
                 .cuit(request.getCuit())
                 .build();
-        return proveedorRepository.save(proveedor);
+        return proveedorRepository.save(p);
     }
 
-    @Transactional
     public Proveedor actualizar(Long id, ProveedorRequest request) {
-        Proveedor proveedor = proveedorRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Proveedor no encontrado con id: " + id));
+        Proveedor p = obtener(id);
+        p.setNombre(request.getNombre());
+        p.setCbu(request.getCbu());
+        p.setCuit(request.getCuit());
+        return proveedorRepository.save(p);
+    }
 
-        proveedor.setNombre(request.getNombre());
-        proveedor.setCbu(request.getCbu());
-        proveedor.setCuit(request.getCuit());
-        return proveedorRepository.save(proveedor);
+    public Proveedor buscarOCrear(String nombre, String cbu, String cuit) {
+        return proveedorRepository.findByCuit(cuit)
+                .orElseGet(() -> proveedorRepository.save(
+                        Proveedor.builder().nombre(nombre).cbu(cbu).cuit(cuit).build()));
     }
 }

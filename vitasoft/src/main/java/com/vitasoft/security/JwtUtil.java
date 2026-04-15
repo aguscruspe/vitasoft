@@ -1,53 +1,53 @@
 package com.vitasoft.security;
 
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.security.Key;
 import java.util.Date;
 import java.util.function.Function;
 
 @Component
 public class JwtUtil {
 
-    private final SecretKey key;
-    private final long expirationMs;
+    @Value("${jwt.secret}")
+    private String secret;
 
-    public JwtUtil(
-            @Value("${app.jwt.secret}") String secret,
-            @Value("${app.jwt.expiration-ms}") long expirationMs) {
-        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.expirationMs = expirationMs;
+    @Value("${jwt.expiration}")
+    private long expiration;
+
+    private Key signingKey;
+
+    @PostConstruct
+    public void init() {
+        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (keyBytes.length < 32) {
+            byte[] padded = new byte[32];
+            System.arraycopy(keyBytes, 0, padded, 0, keyBytes.length);
+            keyBytes = padded;
+        }
+        this.signingKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    // -------------------------------------------------------
-    // Generación: incluye email como subject y rol como claim
-    // -------------------------------------------------------
-    public String generateToken(String email, String rol) {
+    public String generateToken(String email) {
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + expirationMs);
-
+        Date expiryDate = new Date(now.getTime() + expiration);
         return Jwts.builder()
-                .subject(email)
-                .claim("rol", rol)
-                .issuedAt(now)
-                .expiration(expiry)
-                .signWith(key)
+                .setSubject(email)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(signingKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // -------------------------------------------------------
-    // Extracción de claims
-    // -------------------------------------------------------
-    public String extractEmail(String token) {
+    public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
-    }
-
-    public String extractRol(String token) {
-        return extractClaim(token, claims -> claims.get("rol", String.class));
     }
 
     public Date extractExpiration(String token) {
@@ -60,26 +60,32 @@ public class JwtUtil {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(key)
+        return Jwts.parserBuilder()
+                .setSigningKey(signingKey)
                 .build()
-                .parseSignedClaims(token)
-                .getPayload();
-    }
-
-    // -------------------------------------------------------
-    // Validación
-    // -------------------------------------------------------
-    public boolean validateToken(String token) {
-        try {
-            Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
-            return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            return false;
-        }
+                .parseClaimsJws(token)
+                .getBody();
     }
 
     public boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
+    }
+
+    public boolean validateToken(String token, String email) {
+        try {
+            String username = extractUsername(token);
+            return username.equals(email) && !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            extractAllClaims(token);
+            return !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

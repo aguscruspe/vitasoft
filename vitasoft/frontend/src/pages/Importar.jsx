@@ -1,163 +1,145 @@
-import React, { useState, useRef } from 'react';
-import pagosService from '../api/pagosService';
+import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { importarPagos } from '../store/pagosSlice';
+
+const styles = {
+  dropzone: {
+    border: '2px dashed var(--vs-azul)',
+    borderRadius: 8,
+    padding: 60,
+    textAlign: 'center',
+    background: '#fff',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  dropzoneActive: {
+    background: '#e7f1ff',
+    borderColor: 'var(--vs-azul-oscuro)',
+  },
+  icon: {
+    fontSize: 40,
+    color: 'var(--vs-azul)',
+    marginBottom: 12,
+  },
+  info: {
+    marginTop: 20,
+    padding: 16,
+    background: '#fff',
+    borderRadius: 6,
+  },
+};
 
 export default function Importar() {
-  const [file, setFile] = useState(null);
-  const [dragActive, setDragActive] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState('');
-  const inputRef = useRef(null);
+  const dispatch = useDispatch();
+  const { loading, error, lastImport } = useSelector((s) => s.pagos);
+  const [dragging, setDragging] = useState(false);
+  const [archivo, setArchivo] = useState(null);
 
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setFile(e.dataTransfer.files[0]);
-      setResult(null);
-      setError('');
-    }
-  };
-
-  const handleFileSelect = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-      setResult(null);
-      setError('');
-    }
-  };
-
-  const handleUpload = async () => {
+  const handleFile = (file) => {
     if (!file) return;
-    setLoading(true);
-    setError('');
-    setResult(null);
-    try {
-      const res = await pagosService.importar(file);
-      setResult(res.data);
-      setFile(null);
-    } catch (err) {
-      setError(err.response?.data?.error || 'Error al importar archivo');
-    } finally {
-      setLoading(false);
+    const ok = /\.(xlsx?|xls)$/i.test(file.name);
+    if (!ok) {
+      alert('El archivo debe ser un Excel (.xls o .xlsx)');
+      return;
+    }
+    setArchivo(file);
+  };
+
+  const onDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    handleFile(e.dataTransfer.files[0]);
+  };
+
+  const onDragOver = (e) => {
+    e.preventDefault();
+    setDragging(true);
+  };
+
+  const onDragLeave = () => setDragging(false);
+
+  const onSelect = (e) => handleFile(e.target.files[0]);
+
+  const onImportar = async () => {
+    if (!archivo) return;
+    const res = await dispatch(importarPagos(archivo));
+    if (importarPagos.fulfilled.match(res)) {
+      setArchivo(null);
     }
   };
 
   return (
     <div>
-      <div className="page-header">
-        <h1>Importar Pagos desde Excel</h1>
+      <h1 className="page-title">Importar Pagos</h1>
+
+      <label
+        htmlFor="file-input"
+        style={{
+          ...styles.dropzone,
+          ...(dragging ? styles.dropzoneActive : {}),
+          display: 'block',
+        }}
+        onDrop={onDrop}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+      >
+        <div style={styles.icon}>⬆</div>
+        <div style={{ fontSize: 16, marginBottom: 6 }}>
+          Arrastrá tu archivo Excel acá
+        </div>
+        <div style={{ color: 'var(--vs-gris-medio)', fontSize: 13 }}>
+          o hacé click para seleccionarlo
+        </div>
+        {archivo && (
+          <div style={{ marginTop: 14, fontWeight: 600 }}>
+            📄 {archivo.name}
+          </div>
+        )}
+        <input
+          id="file-input"
+          type="file"
+          accept=".xls,.xlsx"
+          onChange={onSelect}
+          style={{ display: 'none' }}
+        />
+      </label>
+
+      <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
+        <button
+          className="btn-primary"
+          onClick={onImportar}
+          disabled={!archivo || loading}
+        >
+          {loading ? 'Importando...' : 'Importar'}
+        </button>
+        {archivo && (
+          <button
+            className="btn-secondary"
+            onClick={() => setArchivo(null)}
+            disabled={loading}
+          >
+            Limpiar
+          </button>
+        )}
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && <div className="error-msg">{error}</div>}
 
-      {/* Resultado de importación */}
-      {result && (
-        <div className="card">
-          <div className={`alert ${result.errores?.length > 0 ? 'alert-info' : 'alert-success'}`}>
-            <strong>Importación completada</strong>
-          </div>
-          <div style={{ display: 'flex', gap: 32, marginTop: 12 }}>
-            <div>
-              <span style={{ fontSize: 28, fontWeight: 700, color: 'var(--azul-oscuro)' }}>
-                {result.totalLeidos}
-              </span>
-              <br />
-              <span className="text-muted">Leídos</span>
-            </div>
-            <div>
-              <span style={{ fontSize: 28, fontWeight: 700, color: 'var(--verde)' }}>
-                {result.totalImportados}
-              </span>
-              <br />
-              <span className="text-muted">Importados</span>
-            </div>
-            {result.errores?.length > 0 && (
-              <div>
-                <span style={{ fontSize: 28, fontWeight: 700, color: 'var(--rojo)' }}>
-                  {result.errores.length}
-                </span>
-                <br />
-                <span className="text-muted">Errores</span>
-              </div>
-            )}
-          </div>
-
-          {result.errores?.length > 0 && (
-            <div style={{ marginTop: 16 }}>
-              <strong>Detalle de errores:</strong>
-              <ul style={{ marginTop: 8, paddingLeft: 20, fontSize: 13, color: 'var(--rojo)' }}>
-                {result.errores.map((err, i) => (
-                  <li key={i}>{err}</li>
-                ))}
-              </ul>
-            </div>
+      {lastImport && (
+        <div style={styles.info}>
+          <h3 style={{ marginBottom: 8 }}>Resultado de la importación</h3>
+          <div>Procesados: <strong>{lastImport.procesados ?? '—'}</strong></div>
+          <div>Insertados: <strong>{lastImport.insertados ?? '—'}</strong></div>
+          <div>Errores: <strong>{lastImport.errores ?? 0}</strong></div>
+          {lastImport.mensajes && lastImport.mensajes.length > 0 && (
+            <ul style={{ marginTop: 8, paddingLeft: 20 }}>
+              {lastImport.mensajes.map((m, i) => (
+                <li key={i} style={{ fontSize: 13 }}>{m}</li>
+              ))}
+            </ul>
           )}
         </div>
       )}
-
-      {/* Drag & Drop zone */}
-      <div className="card">
-        <div
-          className={`dropzone ${dragActive ? 'active' : ''}`}
-          onDragEnter={handleDrag}
-          onDragOver={handleDrag}
-          onDragLeave={handleDrag}
-          onDrop={handleDrop}
-          onClick={() => inputRef.current?.click()}
-        >
-          <div className="dropzone-icon">📁</div>
-          <p><strong>Arrastrá tu archivo Excel aquí</strong></p>
-          <p>o hacé click para seleccionarlo</p>
-          <p style={{ fontSize: 12, marginTop: 8 }}>Formato: .xlsx — Columnas: Proveedor, CUIT, CBU, Monto, Concepto, Fecha</p>
-
-          {file && (
-            <div className="filename">
-              📄 {file.name} ({(file.size / 1024).toFixed(1)} KB)
-            </div>
-          )}
-
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleFileSelect}
-            style={{ display: 'none' }}
-          />
-        </div>
-
-        {file && (
-          <div style={{ marginTop: 16, textAlign: 'center' }}>
-            <button className="btn btn-primary" onClick={handleUpload} disabled={loading}>
-              {loading ? (
-                <>
-                  <span className="spinner" /> Importando...
-                </>
-              ) : (
-                'Importar Pagos'
-              )}
-            </button>
-            <button
-              className="btn btn-outline"
-              style={{ marginLeft: 10 }}
-              onClick={() => { setFile(null); setResult(null); }}
-            >
-              Cancelar
-            </button>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

@@ -1,193 +1,111 @@
 package com.vitasoft.service;
 
-import com.vitasoft.entity.ArchivoGenerado;
-import com.vitasoft.entity.Lote;
-import com.vitasoft.entity.Pago;
-import com.vitasoft.entity.enums.Banco;
-import com.vitasoft.entity.enums.EstadoPago;
-import com.vitasoft.entity.enums.TipoArchivo;
+import com.vitasoft.dto.ProcesarLoteRequest;
+import com.vitasoft.generador.GeneradorArchivo;
+import com.vitasoft.generador.GeneradorFactory;
+import com.vitasoft.generador.GeneradorPDF;
+import com.vitasoft.model.ArchivoGenerado;
+import com.vitasoft.model.EstadoLote;
+import com.vitasoft.model.EstadoPago;
+import com.vitasoft.model.Lote;
+import com.vitasoft.model.Pago;
+import com.vitasoft.model.TipoArchivo;
+import com.vitasoft.repository.ArchivoGeneradoRepository;
 import com.vitasoft.repository.LoteRepository;
 import com.vitasoft.repository.PagoRepository;
-import com.vitasoft.service.generador.*;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.FileWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LoteService {
 
     private final LoteRepository loteRepository;
     private final PagoRepository pagoRepository;
-
-    // Strategy: generadores TXT por banco
-    private final GeneradorCredicoop generadorCredicoop;
-    private final GeneradorGalicia generadorGalicia;
-    private final GeneradorSantander generadorSantander;
-
-    // Generador PDF
+    private final ArchivoGeneradoRepository archivoRepository;
+    private final GeneradorFactory generadorFactory;
     private final GeneradorPDF generadorPDF;
 
-    @Value("${app.archivos.ruta-base}")
-    private String rutaBase;
+    private static final String CARPETA_SALIDA = "archivos_generados";
 
-    private static final DateTimeFormatter TS_FMT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+    public List<Lote> listar() {
+        return loteRepository.findAll();
+    }
 
-    // -------------------------------------------------------
-    // Procesar lote: crea lote, asocia pagos, genera archivos
-    // -------------------------------------------------------
+    public Lote obtener(Long id) {
+        return loteRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Lote no encontrado: " + id));
+    }
+
     @Transactional
-    public Lote procesarLote(List<Long> pagoIds, String bancoStr) {
-        Banco banco;
-        try {
-            banco = Banco.valueOf(bancoStr.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException(
-                    "Banco inválido: " + bancoStr + ". Valores: CREDICOOP, GALICIA, SANTANDER");
+    public Lote procesar(ProcesarLoteRequest request) {
+        List<Pago> pagos = pagoRepository.findAllById(request.getPagoIds());
+        if (pagos.isEmpty()) {
+            throw new RuntimeException("No hay pagos para procesar");
         }
 
-        // Validar que todos los pagos existan y estén PENDIENTES
-        List<Pago> pagos = pagoIds.stream()
-                .map(id -> pagoRepository.findById(id)
-                        .orElseThrow(() -> new EntityNotFoundException("Pago no encontrado: " + id)))
-                .toList();
-
-        for (Pago p : pagos) {
-            if (p.getEstado() != EstadoPago.PENDIENTE) {
-                throw new IllegalStateException(
-                        "El pago id=" + p.getId() + " no está en estado PENDIENTE");
-            }
-            if (p.getLote() != null) {
-                throw new IllegalStateException(
-                        "El pago id=" + p.getId() + " ya pertenece al lote id=" + p.getLote().getId());
-            }
-        }
-
-        // Crear lote
         Lote lote = Lote.builder()
-                .banco(banco)
-                .estado("GENERADO")
                 .fechaCreacion(LocalDateTime.now())
+                .banco(request.getBanco())
+                .estado(EstadoLote.PROCESADO)
+                .pagos(new ArrayList<>())
                 .build();
         lote = loteRepository.save(lote);
 
-        // Asociar pagos al lote y marcar como PROCESADO
         for (Pago p : pagos) {
             p.setLote(lote);
             p.setEstado(EstadoPago.PROCESADO);
+            pagoRepository.save(p);
         }
-        pagoRepository.saveAll(pagos);
+        lote.setPagos(pagos);
 
-        // Refrescar la lista de pagos en el lote para los generadores
-        lote.setPagos(pagos.stream().toList());
-
-        // Generar archivos TXT (Strategy) y PDF
         try {
-            String txtPath = guardarTxt(lote);
-            String pdfPath = guardarPdf(lote);
+            Path carpeta = Paths.get(CARPETA_SALIDA);
+            if (!Files.exists(carpeta)) Files.createDirectories(carpeta);
 
-            lote.getArchivos().add(ArchivoGenerado.builder()
+            GeneradorArchivo gen = generadorFactory.get(request.getBanco());
+            String contenidoTxt = gen.generarTXT(lote);
+            String nombreTxt = "lote_" + lote.getId() + "_" + request.getBanco() + ".txt";
+            Path rutaTxt = carpeta.resolve(nombreTxt);
+            Files.writeString(rutaTxt, contenidoTxt, StandardCharsets.UTF_8);
+
+            archivoRepository.save(ArchivoGenerado.builder()
                     .tipo(TipoArchivo.TXT)
-                    .ruta(txtPath)
+                    .ruta(rutaTxt.toAbsolutePath().toString())
                     .fechaGeneracion(LocalDateTime.now())
                     .lote(lote)
                     .build());
 
-            lote.getArchivos().add(ArchivoGenerado.builder()
+            String nombrePdf = "lote_" + lote.getId() + "_" + request.getBanco() + ".pdf";
+            Path rutaPdf = carpeta.resolve(nombrePdf);
+            generadorPDF.generarPDF(lote, rutaPdf.toAbsolutePath().toString());
+
+            archivoRepository.save(ArchivoGenerado.builder()
                     .tipo(TipoArchivo.PDF)
-                    .ruta(pdfPath)
+                    .ruta(rutaPdf.toAbsolutePath().toString())
                     .fechaGeneracion(LocalDateTime.now())
                     .lote(lote)
                     .build());
-
-            loteRepository.save(lote);
 
         } catch (IOException e) {
-            log.error("Error generando archivos para lote {}", lote.getId(), e);
-            lote.setEstado("ERROR");
-            loteRepository.save(lote);
-            throw new RuntimeException("Error generando archivos del lote: " + e.getMessage(), e);
+            throw new RuntimeException("Error generando archivos: " + e.getMessage(), e);
         }
 
         return lote;
     }
 
-    // -------------------------------------------------------
-    // Listar lotes con sus archivos
-    // -------------------------------------------------------
-    @Transactional(readOnly = true)
-    public List<Lote> listarTodos() {
-        return loteRepository.findAll();
-    }
-
-    // -------------------------------------------------------
-    // Selecciona el generador Strategy según el banco
-    // -------------------------------------------------------
-    private GeneradorArchivo seleccionarGenerador(Banco banco) {
-        return switch (banco) {
-            case CREDICOOP -> generadorCredicoop;
-            case GALICIA -> generadorGalicia;
-            case SANTANDER -> generadorSantander;
-        };
-    }
-
-    // -------------------------------------------------------
-    // Genera TXT usando el Strategy y lo guarda en disco
-    // -------------------------------------------------------
-    private String guardarTxt(Lote lote) throws IOException {
-        Path dir = Paths.get(rutaBase, "txt");
-        Files.createDirectories(dir);
-
-        String fileName = String.format("lote_%d_%s_%s.txt",
-                lote.getId(),
-                lote.getBanco().name(),
-                LocalDateTime.now().format(TS_FMT));
-
-        Path filePath = dir.resolve(fileName);
-
-        // Usar Strategy para generar el contenido
-        GeneradorArchivo generador = seleccionarGenerador(lote.getBanco());
-        String contenido = generador.generarTXT(lote);
-
-        try (PrintWriter writer = new PrintWriter(new FileWriter(filePath.toFile()))) {
-            writer.print(contenido);
-        }
-
-        log.info("TXT generado: {}", filePath);
-        return filePath.toString();
-    }
-
-    // -------------------------------------------------------
-    // Genera PDF y lo guarda en disco
-    // -------------------------------------------------------
-    private String guardarPdf(Lote lote) throws IOException {
-        Path dir = Paths.get(rutaBase, "pdf");
-        Files.createDirectories(dir);
-
-        String fileName = String.format("lote_%d_%s_%s.pdf",
-                lote.getId(),
-                lote.getBanco().name(),
-                LocalDateTime.now().format(TS_FMT));
-
-        Path filePath = dir.resolve(fileName);
-
-        generadorPDF.generar(lote, filePath);
-
-        log.info("PDF generado: {}", filePath);
-        return filePath.toString();
+    public ArchivoGenerado obtenerArchivo(Long archivoId) {
+        return archivoRepository.findById(archivoId)
+                .orElseThrow(() -> new RuntimeException("Archivo no encontrado: " + archivoId));
     }
 }

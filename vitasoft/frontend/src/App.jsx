@@ -3,53 +3,27 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Importar from './pages/Importar';
-import Lotes from './pages/Lotes';
-import Sidebar from './components/Sidebar';
+import Historial from './pages/Historial';
 import ProtectedRoute from './components/ProtectedRoute';
-import './styles/global.css';
+import Layout from './components/Layout';
 
-function AppLayout({ children }) {
-  return (
-    <div className="app-layout">
-      <Sidebar />
-      <main className="main-content">{children}</main>
-    </div>
-  );
-}
+const protectedPage = (Component) => (
+  <ProtectedRoute>
+    <Layout>
+      <Component />
+    </Layout>
+  </ProtectedRoute>
+);
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <AppLayout><Dashboard /></AppLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/importar"
-          element={
-            <ProtectedRoute>
-              <AppLayout><Importar /></AppLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/lotes"
-          element={
-            <ProtectedRoute>
-              <AppLayout><Lotes /></AppLayout>
-            </ProtectedRoute>
-          }
-        />
-
+        <Route path="/dashboard" element={protectedPage(Dashboard)} />
+        <Route path="/importar" element={protectedPage(Importar)} />
+        <Route path="/historial" element={protectedPage(Historial)} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
