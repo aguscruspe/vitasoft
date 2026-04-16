@@ -19,8 +19,11 @@ export const pagosTraffic = {
   importar: (archivo) => {
     const formData = new FormData();
     formData.append('archivo', archivo);
+    // No seteamos Content-Type: el browser/axios agrega automáticamente
+    // el boundary correcto (multipart/form-data; boundary=...). Fijarlo a
+    // mano rompía el parseo en el backend.
     return axiosClient.post('/pagos/importar', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': undefined },
     });
   },
 };

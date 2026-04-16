@@ -1,5 +1,6 @@
 package com.vitasoft.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,5 +33,6 @@ public class ArchivoGenerado {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lote_id", nullable = false)
+    @JsonBackReference("lote-archivos")
     private Lote lote;
 }

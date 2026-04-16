@@ -40,6 +40,6 @@ public class Pago {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lote_id")
-    @JsonBackReference
+    @JsonBackReference("lote-pagos")
     private Lote lote;
 }

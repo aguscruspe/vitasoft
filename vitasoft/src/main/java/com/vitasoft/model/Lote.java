@@ -35,7 +35,12 @@ public class Lote {
     private EstadoLote estado;
 
     @OneToMany(mappedBy = "lote", fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @JsonManagedReference("lote-pagos")
     @Builder.Default
     private List<Pago> pagos = new ArrayList<>();
+
+    @OneToMany(mappedBy = "lote", fetch = FetchType.LAZY)
+    @JsonManagedReference("lote-archivos")
+    @Builder.Default
+    private List<ArchivoGenerado> archivos = new ArrayList<>();
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { importarPagos } from '../store/pagosSlice';
 
@@ -27,6 +27,12 @@ const styles = {
     background: '#fff',
     borderRadius: 6,
   },
+  fileName: {
+    marginTop: 14,
+    fontWeight: 600,
+    color: 'var(--vs-azul-oscuro)',
+    wordBreak: 'break-all',
+  },
 };
 
 export default function Importar() {
@@ -34,39 +40,75 @@ export default function Importar() {
   const { loading, error, lastImport } = useSelector((s) => s.pagos);
   const [dragging, setDragging] = useState(false);
   const [archivo, setArchivo] = useState(null);
+  const [localError, setLocalError] = useState(null);
+  const inputRef = useRef(null);
+
+  const resetInput = () => {
+    if (inputRef.current) inputRef.current.value = '';
+  };
 
   const handleFile = (file) => {
     if (!file) return;
     const ok = /\.(xlsx?|xls)$/i.test(file.name);
     if (!ok) {
-      alert('El archivo debe ser un Excel (.xls o .xlsx)');
+      setLocalError('El archivo debe ser un Excel (.xls o .xlsx)');
+      setArchivo(null);
+      resetInput();
       return;
     }
+    setLocalError(null);
     setArchivo(file);
   };
 
   const onDrop = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragging(false);
-    handleFile(e.dataTransfer.files[0]);
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    handleFile(file);
   };
 
   const onDragOver = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragging(true);
   };
 
-  const onDragLeave = () => setDragging(false);
+  const onDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(false);
+  };
 
-  const onSelect = (e) => handleFile(e.target.files[0]);
+  const onSelect = (e) => {
+    const file = e.target.files && e.target.files[0];
+    handleFile(file);
+  };
+
+  const onLimpiar = () => {
+    setArchivo(null);
+    setLocalError(null);
+    resetInput();
+  };
 
   const onImportar = async () => {
-    if (!archivo) return;
-    const res = await dispatch(importarPagos(archivo));
-    if (importarPagos.fulfilled.match(res)) {
-      setArchivo(null);
+    if (!archivo || loading) return;
+    setLocalError(null);
+    try {
+      const res = await dispatch(importarPagos(archivo));
+      if (importarPagos.fulfilled.match(res)) {
+        setArchivo(null);
+        resetInput();
+      } else if (importarPagos.rejected.match(res)) {
+        // el error ya queda en el store; nos aseguramos de tener un mensaje
+        setLocalError(res.payload || 'No se pudo importar el archivo');
+      }
+    } catch (err) {
+      setLocalError(err?.message || 'Error inesperado al importar');
     }
   };
+
+  const mensajeError = localError || error;
 
   return (
     <div>
@@ -81,6 +123,7 @@ export default function Importar() {
         }}
         onDrop={onDrop}
         onDragOver={onDragOver}
+        onDragEnter={onDragOver}
         onDragLeave={onDragLeave}
       >
         <div style={styles.icon}>⬆</div>
@@ -91,11 +134,15 @@ export default function Importar() {
           o hacé click para seleccionarlo
         </div>
         {archivo && (
-          <div style={{ marginTop: 14, fontWeight: 600 }}>
+          <div style={styles.fileName} data-testid="archivo-nombre">
             📄 {archivo.name}
+            <span style={{ marginLeft: 8, fontWeight: 400, color: 'var(--vs-gris-medio)', fontSize: 12 }}>
+              ({Math.round(archivo.size / 1024)} KB)
+            </span>
           </div>
         )}
         <input
+          ref={inputRef}
           id="file-input"
           type="file"
           accept=".xls,.xlsx"
@@ -115,7 +162,7 @@ export default function Importar() {
         {archivo && (
           <button
             className="btn-secondary"
-            onClick={() => setArchivo(null)}
+            onClick={onLimpiar}
             disabled={loading}
           >
             Limpiar
@@ -123,18 +170,22 @@ export default function Importar() {
         )}
       </div>
 
-      {error && <div className="error-msg">{error}</div>}
+      {mensajeError && (
+        <div className="error-msg" style={{ marginTop: 12 }}>
+          {mensajeError}
+        </div>
+      )}
 
       {lastImport && (
         <div style={styles.info}>
           <h3 style={{ marginBottom: 8 }}>Resultado de la importación</h3>
-          <div>Procesados: <strong>{lastImport.procesados ?? '—'}</strong></div>
-          <div>Insertados: <strong>{lastImport.insertados ?? '—'}</strong></div>
+          <div>Procesados: <strong>{lastImport.importados ?? '—'}</strong></div>
+          <div>Insertados: <strong>{lastImport.importados ?? '—'}</strong></div>
           <div>Errores: <strong>{lastImport.errores ?? 0}</strong></div>
-          {lastImport.mensajes && lastImport.mensajes.length > 0 && (
+          {lastImport.mensajeError && lastImport.mensajeError.length > 0 && (
             <ul style={{ marginTop: 8, paddingLeft: 20 }}>
-              {lastImport.mensajes.map((m, i) => (
-                <li key={i} style={{ fontSize: 13 }}>{m}</li>
+              {lastImport.mensajeError.map((m, i) => (
+                <li key={i} style={{ fontSize: 13, color: 'var(--vs-rojo, #c0392b)' }}>{m}</li>
               ))}
             </ul>
           )}
