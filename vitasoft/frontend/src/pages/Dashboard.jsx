@@ -248,15 +248,15 @@ export default function Dashboard() {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: '#fff', borderRadius: 8, padding: 28,
+              background: 'var(--modal-bg)', borderRadius: 8, padding: 28,
               width: 420, maxWidth: '90vw',
               boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
             }}
           >
-            <h2 style={{ margin: '0 0 16px', color: '#1A2B4C', fontSize: 18 }}>
+            <h2 style={{ margin: '0 0 16px', color: 'var(--text-primary)', fontSize: 18 }}>
               Confirmar eliminación
             </h2>
-            <p style={{ margin: '0 0 24px', color: '#333' }}>
+            <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)' }}>
               ¿Estás seguro que querés eliminar{' '}
               <strong>{seleccionados.length} pagos</strong>?
               {' '}Esta acción no se puede deshacer.
@@ -294,20 +294,20 @@ export default function Dashboard() {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: '#fff', borderRadius: 8, padding: 28,
+              background: 'var(--modal-bg)', borderRadius: 8, padding: 28,
               width: 420, maxWidth: '90vw',
               boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
             }}
           >
-            <h2 style={{ margin: '0 0 16px', color: '#1A2B4C', fontSize: 18 }}>
+            <h2 style={{ margin: '0 0 16px', color: 'var(--text-primary)', fontSize: 18 }}>
               Confirmar procesamiento
             </h2>
-            <p style={{ margin: '0 0 8px', color: '#333' }}>
+            <p style={{ margin: '0 0 8px', color: 'var(--text-secondary)' }}>
               ¿Estás seguro que querés procesar{' '}
               <strong>{seleccionados.length} pagos</strong> con banco{' '}
               <strong>{bancoProceso}</strong>?
             </p>
-            <p style={{ margin: '0 0 24px', fontSize: 16, fontWeight: 600, color: '#1A2B4C' }}>
+            <p style={{ margin: '0 0 24px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
               Monto total: {formatearMonto(montoTotalSeleccionados)}
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>

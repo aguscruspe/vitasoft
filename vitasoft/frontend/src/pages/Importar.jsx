@@ -4,33 +4,33 @@ import { importarPagos } from '../store/pagosSlice';
 
 const styles = {
   dropzone: {
-    border: '2px dashed var(--vs-azul)',
+    border: '2px dashed var(--btn-primary)',
     borderRadius: 8,
     padding: 60,
     textAlign: 'center',
-    background: '#fff',
+    background: 'var(--card-bg)',
     cursor: 'pointer',
     transition: 'all 0.2s',
   },
   dropzoneActive: {
-    background: '#e7f1ff',
-    borderColor: 'var(--vs-azul-oscuro)',
+    background: 'var(--table-row-hover)',
+    borderColor: 'var(--text-primary)',
   },
   icon: {
     fontSize: 40,
-    color: 'var(--vs-azul)',
+    color: 'var(--btn-primary)',
     marginBottom: 12,
   },
   info: {
     marginTop: 20,
     padding: 16,
-    background: '#fff',
+    background: 'var(--card-bg)',
     borderRadius: 6,
   },
   fileName: {
     marginTop: 14,
     fontWeight: 600,
-    color: 'var(--vs-azul-oscuro)',
+    color: 'var(--text-primary)',
     wordBreak: 'break-all',
   },
 };
@@ -130,13 +130,13 @@ export default function Importar() {
         <div style={{ fontSize: 16, marginBottom: 6 }}>
           Arrastrá tu archivo Excel acá
         </div>
-        <div style={{ color: 'var(--vs-gris-medio)', fontSize: 13 }}>
+        <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
           o hacé click para seleccionarlo
         </div>
         {archivo && (
           <div style={styles.fileName} data-testid="archivo-nombre">
             📄 {archivo.name}
-            <span style={{ marginLeft: 8, fontWeight: 400, color: 'var(--vs-gris-medio)', fontSize: 12 }}>
+            <span style={{ marginLeft: 8, fontWeight: 400, color: 'var(--text-secondary)', fontSize: 12 }}>
               ({Math.round(archivo.size / 1024)} KB)
             </span>
           </div>

@@ -2,12 +2,13 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../store/authSlice';
+import { useTheme } from '../context/ThemeContext';
 
 const styles = {
   sidebar: {
     width: 220,
-    background: 'var(--vs-azul-oscuro)',
-    color: '#fff',
+    background: 'var(--bg-sidebar)',
+    color: 'var(--text-sidebar)',
     display: 'flex',
     flexDirection: 'column',
     padding: '20px 0',
@@ -27,13 +28,35 @@ const styles = {
     flex: 1,
   },
   link: {
-    color: '#cfd8e8',
+    color: 'rgba(255,255,255,0.7)',
     padding: '12px 20px',
     textDecoration: 'none',
     fontSize: 14,
   },
   linkActive: {
-    background: 'var(--vs-azul)',
+    background: 'var(--btn-primary)',
+    color: '#fff',
+  },
+  themeSelector: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: 4,
+    padding: '12px 20px',
+    borderTop: '1px solid rgba(255,255,255,0.1)',
+  },
+  themeBtn: {
+    background: 'transparent',
+    border: '1px solid rgba(255,255,255,0.2)',
+    borderRadius: 4,
+    padding: '5px 10px',
+    fontSize: 13,
+    cursor: 'pointer',
+    color: 'rgba(255,255,255,0.6)',
+    transition: 'all 0.15s ease',
+  },
+  themeBtnActive: {
+    background: 'var(--btn-primary)',
+    borderColor: 'var(--btn-primary)',
     color: '#fff',
   },
   userBox: {
@@ -55,6 +78,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const usuario = useSelector((s) => s.auth.usuario);
+  const { theme, setTheme } = useTheme();
 
   const handleLogout = () => {
     dispatch(logout());
@@ -64,6 +88,11 @@ export default function Sidebar() {
   const linkStyle = ({ isActive }) =>
     isActive ? { ...styles.link, ...styles.linkActive } : styles.link;
 
+  const themeBtnStyle = (value) =>
+    theme === value
+      ? { ...styles.themeBtn, ...styles.themeBtnActive }
+      : styles.themeBtn;
+
   return (
     <aside style={styles.sidebar}>
       <div style={styles.brand}>VitaSoft</div>
@@ -72,15 +101,26 @@ export default function Sidebar() {
         <NavLink to="/importar" style={linkStyle}>Importar</NavLink>
         <NavLink to="/historial" style={linkStyle}>Historial</NavLink>
       </nav>
+      <div style={styles.themeSelector}>
+        <button style={themeBtnStyle('light')} onClick={() => setTheme('light')} title="Tema claro">
+          Claro
+        </button>
+        <button style={themeBtnStyle('dark')} onClick={() => setTheme('dark')} title="Tema oscuro">
+          Oscuro
+        </button>
+        <button style={themeBtnStyle('system')} onClick={() => setTheme('system')} title="Tema del sistema">
+          Auto
+        </button>
+      </div>
       <div style={styles.userBox}>
         {usuario && (
           <>
             <div><strong>{usuario.nombre}</strong></div>
-            <div style={{ color: '#cfd8e8' }}>{usuario.email}</div>
+            <div style={{ color: 'rgba(255,255,255,0.6)' }}>{usuario.email}</div>
           </>
         )}
         <button style={styles.logoutBtn} onClick={handleLogout}>
-          Cerrar sesión
+          Cerrar sesion
         </button>
       </div>
     </aside>

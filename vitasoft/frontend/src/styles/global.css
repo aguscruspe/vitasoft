@@ -13,13 +13,13 @@ html, body, #root {
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
     'Ubuntu', 'Helvetica Neue', sans-serif;
-  background-color: var(--vs-gris-claro);
-  color: var(--vs-azul-oscuro);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   font-size: 14px;
 }
 
 a {
-  color: var(--vs-azul);
+  color: var(--btn-primary);
   text-decoration: none;
 }
 
@@ -39,8 +39,8 @@ button:disabled {
 }
 
 .btn-primary {
-  background-color: var(--vs-azul);
-  color: var(--vs-blanco);
+  background-color: var(--btn-primary);
+  color: var(--btn-primary-text);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -48,58 +48,58 @@ button:disabled {
 }
 
 .btn-secondary {
-  background-color: var(--vs-gris-medio);
-  color: var(--vs-blanco);
+  background-color: var(--text-secondary);
+  color: var(--btn-primary-text);
 }
 
 .btn-dark {
-  background-color: var(--vs-azul-oscuro);
-  color: var(--vs-blanco);
+  background-color: var(--table-header);
+  color: var(--table-header-text);
 }
 
 .btn-danger {
   background-color: var(--vs-rojo);
-  color: var(--vs-blanco);
+  color: #fff;
 }
 
 input, select {
   font-family: inherit;
   font-size: 14px;
   padding: 8px 12px;
-  border: 1px solid var(--vs-borde);
+  border: 1px solid var(--input-border);
   border-radius: 4px;
-  background: var(--vs-blanco);
-  color: var(--vs-azul-oscuro);
+  background: var(--input-bg);
+  color: var(--text-primary);
 }
 
 input:focus, select:focus {
   outline: none;
-  border-color: var(--vs-azul);
+  border-color: var(--btn-primary);
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  background: var(--vs-blanco);
+  background: var(--card-bg);
   border-radius: 6px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
 thead {
-  background: var(--vs-azul-oscuro);
-  color: var(--vs-blanco);
+  background: var(--table-header);
+  color: var(--table-header-text);
 }
 
 th, td {
   padding: 10px 12px;
   text-align: left;
-  border-bottom: 1px solid var(--vs-borde);
+  border-bottom: 1px solid var(--border-color);
 }
 
 tbody tr:hover {
-  background: var(--vs-gris-claro);
+  background: var(--table-row-hover);
 }
 
 .app-layout {
@@ -114,13 +114,13 @@ tbody tr:hover {
 }
 
 .page-title {
-  color: var(--vs-azul-oscuro);
+  color: var(--text-primary);
   margin-bottom: 20px;
   font-size: 22px;
 }
 
 .card {
-  background: var(--vs-blanco);
+  background: var(--card-bg);
   padding: 20px;
   border-radius: 6px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
@@ -142,7 +142,7 @@ tbody tr:hover {
 
 .filter-group label {
   font-size: 12px;
-  color: var(--vs-gris-medio);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -157,4 +157,60 @@ tbody tr:hover {
   color: var(--vs-verde);
   margin-top: 8px;
   font-size: 13px;
+}
+
+/* Landing page animations */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.landing-hero-badge {
+  animation: fadeSlideUp 0.4s ease forwards;
+}
+.landing-hero-title {
+  opacity: 0;
+  animation: fadeSlideUp 0.6s ease 0.1s forwards;
+}
+.landing-hero-sub {
+  opacity: 0;
+  animation: fadeSlideUp 0.6s ease 0.2s forwards;
+}
+.landing-hero-btns {
+  opacity: 0;
+  animation: fadeSlideUp 0.6s ease 0.3s forwards;
+}
+
+/* Landing card hover */
+.landing-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.landing-card:hover {
+  transform: translateY(-4px) !important;
+  border-color: rgba(0,123,255,0.4) !important;
+  box-shadow: 0 0 30px rgba(0,123,255,0.08);
+}
+
+/* Landing buttons hover */
+.landing-btn-filled:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 4px 20px rgba(0,123,255,0.4);
+  transform: translateY(-1px);
+}
+.landing-btn-ghost:hover {
+  color: #ffffff !important;
+}
+.landing-btn-outline:hover {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.3) !important;
+  transform: translateY(-1px);
+}
+
+/* Navbar scroll state */
+.landing-navbar {
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+.landing-navbar.scrolled {
+  background: rgba(10,15,30,0.95) !important;
+  border-bottom-color: rgba(255,255,255,0.1) !important;
 }

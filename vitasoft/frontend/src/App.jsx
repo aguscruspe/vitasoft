@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
+import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Importar from './pages/Importar';
@@ -17,15 +19,17 @@ const protectedPage = (Component) => (
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={protectedPage(Dashboard)} />
-        <Route path="/importar" element={protectedPage(Importar)} />
-        <Route path="/historial" element={protectedPage(Historial)} />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/dashboard" element={protectedPage(Dashboard)} />
+          <Route path="/importar" element={protectedPage(Importar)} />
+          <Route path="/historial" element={protectedPage(Historial)} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
