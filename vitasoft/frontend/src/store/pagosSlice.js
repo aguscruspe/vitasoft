@@ -23,6 +23,18 @@ export const actualizarPago = createAsyncThunk(
   }
 );
 
+export const eliminarPagos = createAsyncThunk(
+  'pagos/eliminar',
+  async (ids, { rejectWithValue }) => {
+    try {
+      await Promise.all(ids.map((id) => pagosService.eliminar(id)));
+      return ids;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Error al eliminar pagos');
+    }
+  }
+);
+
 export const importarPagos = createAsyncThunk(
   'pagos/importar',
   async (archivo, { rejectWithValue }) => {
@@ -40,7 +52,7 @@ const initialState = {
   error: null,
   filtros: {
     banco: '',
-    estado: '',
+    estado: 'PENDIENTE',
   },
   seleccionados: [],
   lastImport: null,
@@ -85,6 +97,19 @@ const pagosSlice = createSlice({
       .addCase(actualizarPago.fulfilled, (state, action) => {
         const idx = state.items.findIndex((p) => p.id === action.payload.id);
         if (idx >= 0) state.items[idx] = action.payload;
+      })
+      .addCase(eliminarPagos.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(eliminarPagos.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = state.items.filter((p) => !action.payload.includes(p.id));
+        state.seleccionados = [];
+      })
+      .addCase(eliminarPagos.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       })
       .addCase(importarPagos.pending, (state) => {
         state.loading = true;
