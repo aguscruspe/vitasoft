@@ -1,54 +1,55 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchLotes } from '../store/lotesSlice';
 import { lotesService } from '../services/lotesService';
-import './Historial.css';
 
-const BANCOS = ['CREDICOOP', 'GALICIA', 'SANTANDER'];
-
-const BANK_CLASS = {
-  CREDICOOP: 'bank-credicoop',
-  GALICIA: 'bank-galicia',
-  SANTANDER: 'bank-santander',
+const formatearFecha = (iso) => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d)) return '—';
+  const hoy = new Date();
+  const ayer = new Date();
+  ayer.setDate(hoy.getDate() - 1);
+  const sameDay = (a, b) => a.toDateString() === b.toDateString();
+  const hh = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  if (sameDay(d, hoy)) return `Hoy, ${hh}`;
+  if (sameDay(d, ayer)) return `Ayer, ${hh}`;
+  return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }) + `, ${hh}`;
 };
 
-const formatearFecha = (fechaISO) => {
-  if (!fechaISO) return '—';
-  const fecha = new Date(fechaISO);
-  if (isNaN(fecha)) return '—';
-  return fecha.toLocaleDateString('es-AR', {
-    day: '2-digit', month: '2-digit', year: 'numeric'
-  }) + ' ' + fecha.toLocaleTimeString('es-AR', {
-    hour: '2-digit', minute: '2-digit'
-  });
+const formatearMoneda = (v) =>
+  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(v || 0);
+
+const BANK_COLOR = {
+  CREDICOOP: 'var(--vs-blue)',
+  GALICIA: 'var(--vs-rojo)',
+  SANTANDER: 'var(--vs-verde)',
 };
 
-const formatearMoneda = (valor) =>
-  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(valor);
+const BANK_BG = {
+  CREDICOOP: 'rgba(0,89,187,0.1)',
+  GALICIA: 'rgba(186,26,26,0.1)',
+  SANTANDER: 'rgba(22,163,74,0.1)',
+};
 
 export default function Historial() {
   const dispatch = useDispatch();
   const { items, loading, error } = useSelector((s) => s.lotes);
   const [ordenDesc, setOrdenDesc] = useState(true);
-  const [filtroBanco, setFiltroBanco] = useState('');
-
-  const itemsFiltrados = useMemo(() => {
-    let filtered = items;
-    if (filtroBanco) {
-      filtered = filtered.filter((l) => l.banco === filtroBanco);
-    }
-    const sorted = [...filtered].sort((a, b) => {
-      const fechaA = a.fechaCreacion || a.fecha || '';
-      const fechaB = b.fechaCreacion || b.fecha || '';
-      const cmp = fechaA.localeCompare(fechaB) || a.id - b.id;
-      return ordenDesc ? -cmp : cmp;
-    });
-    return sorted;
-  }, [items, ordenDesc, filtroBanco]);
 
   useEffect(() => {
     dispatch(fetchLotes());
   }, [dispatch]);
+
+  const lotes = useMemo(() => {
+    const sorted = [...items].sort((a, b) => {
+      const fa = a.fechaCreacion || a.fecha || '';
+      const fb = b.fechaCreacion || b.fecha || '';
+      const cmp = fa.localeCompare(fb) || a.id - b.id;
+      return ordenDesc ? -cmp : cmp;
+    });
+    return sorted;
+  }, [items, ordenDesc]);
 
   const archivoDe = (lote, tipo) => {
     if (!lote.archivos) return null;
@@ -62,112 +63,170 @@ export default function Historial() {
       : `archivo_${archivo.id}.${archivo.tipo.toLowerCase()}`;
     try {
       await lotesService.descargarArchivo(archivo.id, nombre);
-    } catch (e) {
+    } catch {
       alert('No se pudo descargar el archivo');
     }
   };
 
-  const cantidadPagos = (lote) =>
-    lote.pagos ? lote.pagos.length : (lote.cantidadPagos ?? '—');
-
-  const totalLote = (lote) => {
-    if (lote.pagos && lote.pagos.length > 0) {
-      return formatearMoneda(lote.pagos.reduce((acc, p) => acc + Number(p.monto), 0));
-    }
-    return lote.total != null ? formatearMoneda(lote.total) : '—';
-  };
-
   return (
-    <div className="historial-page">
-      <h1 className="historial-title">Historial de Lotes</h1>
-
-      {/* Filter Chips */}
-      <div className="historial-filters">
-        <div className="chip-group">
-          <span className="filter-label">Banco</span>
-          <button
-            className={`chip${filtroBanco === '' ? ' active' : ''}`}
-            onClick={() => setFiltroBanco('')}
-          >
-            Todos
-          </button>
-          {BANCOS.map((b) => (
-            <button
-              key={b}
-              className={`chip${filtroBanco === b ? ' active' : ''}`}
-              onClick={() => setFiltroBanco(b)}
-            >
-              {b}
-            </button>
-          ))}
+    <div className="anim-up" style={{ padding: 32 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <h1 style={{ fontSize: 44, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-1.1px', lineHeight: '44px' }}>
+            Historial de Lotes
+          </h1>
+          <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 8 }}>
+            {lotes.length} lote{lotes.length === 1 ? '' : 's'} generado{lotes.length === 1 ? '' : 's'}
+          </p>
         </div>
-
         <button
-          className="btn-order"
-          onClick={() => setOrdenDesc((prev) => !prev)}
+          onClick={() => setOrdenDesc((v) => !v)}
+          style={{
+            padding: '10px 16px',
+            border: '1px solid var(--border-color)',
+            background: 'var(--card-bg)',
+            borderRadius: 8,
+            fontSize: 13,
+            fontWeight: 500,
+            color: 'var(--text-primary)',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
           title={ordenDesc ? 'Más recientes primero' : 'Más antiguos primero'}
         >
-          {ordenDesc ? '↓' : '↑'} {ordenDesc ? 'Recientes' : 'Antiguos'}
+          <span style={{ fontSize: 14 }}>{ordenDesc ? '↓' : '↑'}</span>
+          {ordenDesc ? 'Recientes' : 'Antiguos'}
         </button>
       </div>
 
-      {/* Error */}
-      {error && <div className="dashboard-alert alert-error">{error}</div>}
+      {error && <div className="error-msg" style={{ marginBottom: 16 }}>{error}</div>}
+      {loading && <div style={{ color: 'var(--text-secondary)' }}>Cargando…</div>}
 
-      {/* Cards Grid */}
-      <div className="historial-grid">
-        {loading && (
-          <div className="historial-loading">Cargando...</div>
-        )}
+      {!loading && lotes.length === 0 && (
+        <div
+          style={{
+            background: 'var(--card-bg)',
+            border: '1px solid var(--border-soft)',
+            borderRadius: 4,
+            padding: 48,
+            textAlign: 'center',
+            color: 'var(--text-secondary)',
+          }}
+        >
+          Todavía no hay lotes generados.
+        </div>
+      )}
 
-        {!loading && itemsFiltrados.length === 0 && (
-          <div className="historial-empty">Sin lotes aún</div>
-        )}
-
-        {!loading && itemsFiltrados.map((lote) => {
-          const txt = archivoDe(lote, 'TXT');
-          const pdf = archivoDe(lote, 'PDF');
-          const bankClass = BANK_CLASS[lote.banco] || 'bank-default';
-
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+        {lotes.map((l) => {
+          const banco = (l.banco || '').toUpperCase();
+          const color = BANK_COLOR[banco] || 'var(--vs-blue)';
+          const bg = BANK_BG[banco] || 'rgba(0,89,187,0.1)';
+          const total = l.pagos
+            ? l.pagos.reduce((acc, p) => acc + Number(p.monto || 0), 0)
+            : Number(l.total || 0);
+          const cantidad = l.pagos ? l.pagos.length : l.cantidadPagos ?? '—';
+          const txt = archivoDe(l, 'TXT');
+          const pdf = archivoDe(l, 'PDF');
           return (
-            <div className="lote-card" key={lote.id}>
-              <div className="lote-card-header">
-                <span className="lote-card-id">Lote #{lote.id}</span>
-                <span className={`bank-badge ${bankClass}`}>{lote.banco}</span>
-              </div>
-
-              <div className="lote-card-details">
-                <div className="lote-detail">
-                  <span className="lote-detail-label">Fecha</span>
-                  <span className="lote-detail-value">
-                    {formatearFecha(lote.fechaCreacion || lote.fecha)}
+            <div
+              key={l.id}
+              style={{
+                background: 'var(--card-bg)',
+                border: '1px solid var(--border-soft)',
+                borderRadius: 4,
+                overflow: 'hidden',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+              }}
+            >
+              <div style={{ height: 3, background: color }} />
+              <div style={{ padding: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>Lote #{l.id}</span>
+                  <span
+                    className="status-badge"
+                    style={{ background: bg, color }}
+                  >
+                    {banco || '—'}
                   </span>
                 </div>
-                <div className="lote-detail">
-                  <span className="lote-detail-label">Pagos</span>
-                  <span className="lote-detail-value">{cantidadPagos(lote)}</span>
+                <div style={{ fontSize: 22, fontWeight: 700, color, letterSpacing: '-0.03em', marginBottom: 16 }}>
+                  {formatearMoneda(total)}
                 </div>
-                <div className="lote-detail" style={{ gridColumn: '1 / -1' }}>
-                  <span className="lote-detail-label">Total</span>
-                  <span className="lote-detail-value total">{totalLote(lote)}</span>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 8,
+                    marginBottom: 16,
+                    paddingBottom: 16,
+                    borderBottom: '1px solid var(--border-color)',
+                  }}
+                >
+                  {[
+                    ['Pagos', cantidad],
+                    ['Fecha', formatearFecha(l.fechaCreacion || l.fecha)],
+                  ].map(([k, v]) => (
+                    <div key={k}>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          letterSpacing: '0.7px',
+                          color: 'var(--text-muted)',
+                          textTransform: 'uppercase',
+                          marginBottom: 2,
+                        }}
+                      >
+                        {k}
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{v}</div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-
-              <div className="lote-card-actions">
-                <button
-                  className="btn-download btn-download-txt"
-                  onClick={() => descargar(txt)}
-                  disabled={!txt}
-                >
-                  Descargar TXT
-                </button>
-                <button
-                  className="btn-download btn-download-pdf"
-                  onClick={() => descargar(pdf)}
-                  disabled={!pdf}
-                >
-                  Descargar PDF
-                </button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => descargar(txt)}
+                    disabled={!txt}
+                    style={{
+                      flex: 1,
+                      padding: 7,
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 4,
+                      background: 'var(--card-bg)',
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: txt ? 'var(--text-primary)' : 'var(--text-muted)',
+                      cursor: txt ? 'pointer' : 'not-allowed',
+                      fontFamily: 'inherit',
+                      opacity: txt ? 1 : 0.6,
+                    }}
+                  >
+                    ↓ TXT
+                  </button>
+                  <button
+                    onClick={() => descargar(pdf)}
+                    disabled={!pdf}
+                    style={{
+                      flex: 1,
+                      padding: 7,
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 4,
+                      background: 'var(--card-bg)',
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: pdf ? 'var(--text-primary)' : 'var(--text-muted)',
+                      cursor: pdf ? 'pointer' : 'not-allowed',
+                      fontFamily: 'inherit',
+                      opacity: pdf ? 1 : 0.6,
+                    }}
+                  >
+                    ↓ PDF
+                  </button>
+                </div>
               </div>
             </div>
           );

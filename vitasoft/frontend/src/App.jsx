@@ -6,6 +6,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Importar from './pages/Importar';
 import Historial from './pages/Historial';
+import Usuarios from './pages/Usuarios';
+import Ajustes from './pages/Ajustes';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 
@@ -27,6 +29,8 @@ export default function App() {
           <Route path="/dashboard" element={protectedPage(Dashboard)} />
           <Route path="/importar" element={protectedPage(Importar)} />
           <Route path="/historial" element={protectedPage(Historial)} />
+          <Route path="/usuarios" element={protectedPage(Usuarios)} />
+          <Route path="/ajustes" element={protectedPage(Ajustes)} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

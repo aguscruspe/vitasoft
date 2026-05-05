@@ -1,55 +1,28 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../store/authSlice';
-import { useTheme } from '../context/ThemeContext';
+import Sidebar from './Sidebar';
+import Topbar from './Topbar';
+import GeneracionModal from './GeneracionModal';
+import { GeneracionProvider } from '../context/GeneracionContext';
 
 export default function Layout({ children }) {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const usuario = useSelector((s) => s.auth.usuario);
-  const { theme, setTheme } = useTheme();
-
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
-  };
-
-  const linkClass = ({ isActive }) => `topnav-link${isActive ? ' active' : ''}`;
-
   return (
-    <div className="app-shell">
-      <nav className="topnav">
-        <div className="topnav-inner">
-          <div className="topnav-left">
-            <span className="topnav-logo">VS</span>
-            <div className="topnav-links">
-              <NavLink to="/dashboard" className={linkClass}>Dashboard</NavLink>
-              <NavLink to="/importar" className={linkClass}>Importar</NavLink>
-              <NavLink to="/historial" className={linkClass}>Historial</NavLink>
-            </div>
-          </div>
-          <div className="topnav-right">
-            <div className="topnav-theme-btns">
-              <button
-                className={`topnav-theme-btn${theme === 'light' ? ' active' : ''}`}
-                onClick={() => setTheme('light')}
-              >Claro</button>
-              <button
-                className={`topnav-theme-btn${theme === 'dark' ? ' active' : ''}`}
-                onClick={() => setTheme('dark')}
-              >Oscuro</button>
-              <button
-                className={`topnav-theme-btn${theme === 'system' ? ' active' : ''}`}
-                onClick={() => setTheme('system')}
-              >Auto</button>
-            </div>
-            {usuario && <span className="topnav-user">{usuario.nombre}</span>}
-            <button className="topnav-logout" onClick={handleLogout}>Salir</button>
-          </div>
+    <GeneracionProvider>
+      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+        <Sidebar />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <Topbar />
+          <main
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              background: 'var(--bg-primary)',
+            }}
+          >
+            {children}
+          </main>
         </div>
-      </nav>
-      <main className="app-main">{children}</main>
-    </div>
+        <GeneracionModal />
+      </div>
+    </GeneracionProvider>
   );
 }

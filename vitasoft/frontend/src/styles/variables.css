@@ -1,96 +1,38 @@
-/* ─────────────────────────────────────────────────────────────
-   VitaSoft Design Tokens
-   Fintech minimalista — paleta original (navy + azul) ejecutada
-   con superficies casi blancas, hairline borders y mucho whitespace.
-   ───────────────────────────────────────────────────────────── */
-
 :root {
-  /* Marca semántica (no cambia con tema) */
-  --vs-navy: #1A2B4C;
-  --vs-blue: #007BFF;
-  --vs-rojo: #DC3545;
-  --vs-verde: #28A745;
+  /* Brand */
+  --vs-blue:        #0059BB;
+  --vs-blue-2:      #0070EA;
+  --vs-blue-light:  #007BFF;
+  --vs-blue-bg:     rgba(0, 89, 187, 0.1);
+  --vs-orange:      #9E3D00;
+  --vs-orange-bg:   rgba(158, 61, 0, 0.1);
+  --vs-rojo:        #BA1A1A;
+  --vs-red-bg:      rgba(186, 26, 26, 0.1);
+  --vs-verde:       #16A34A;
 
-  /* ── Tipografía ───────────────────────────────────────────── */
-  --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-display: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+  /* Text scale (T1 darkest → T6 lightest) */
+  --vs-t1: rgb(25, 28, 29);
+  --vs-t2: rgb(65, 71, 84);
+  --vs-t3: rgb(78, 94, 130);
+  --vs-t4: rgb(100, 116, 139);
+  --vs-t5: rgb(113, 119, 134);
+  --vs-t6: rgb(148, 163, 184);
 
-  /* Escala tipográfica (perfect fourth restringido — minimalista) */
-  --text-2xs: 11px;
-  --text-xs: 12px;
-  --text-sm: 13px;
-  --text-base: 14px;
-  --text-md: 15px;
-  --text-lg: 17px;
-  --text-xl: 20px;
-  --text-2xl: 24px;
-  --text-3xl: 30px;
-  --text-4xl: 38px;
-  --text-5xl: 48px;
-  --text-6xl: 64px;
+  /* Borders / surfaces */
+  --vs-border:   rgba(193, 198, 215, 0.15);
+  --vs-border-2: rgb(193, 198, 215);
+  --vs-border-3: rgb(225, 227, 228);
+  --vs-border-4: rgb(226, 232, 240);
+  --vs-bg:       rgb(248, 249, 250);
+  --vs-bg-2:     rgb(243, 244, 245);
+  --vs-sidebar:  rgb(248, 250, 252);
 
-  /* Pesos */
-  --fw-regular: 400;
-  --fw-medium: 500;
-  --fw-semibold: 600;
-  --fw-bold: 700;
-  --fw-display: 600;
+  /* Brand gradient */
+  --vs-grad-blue: linear-gradient(rgb(0, 89, 187) 0%, rgb(0, 112, 234) 100%);
 
-  /* Line-height */
-  --lh-tight: 1.05;
-  --lh-snug: 1.2;
-  --lh-normal: 1.5;
-  --lh-relaxed: 1.65;
-
-  /* Tracking — fintech minimalista usa tracking apretado en displays */
-  --track-tight: -0.011em;
-  --track-tighter: -0.025em;
-  --track-tightest: -0.04em;
-  --track-normal: 0;
-  --track-wide: 0.04em;
-  --track-wider: 0.08em;
-
-  /* ── Espaciado (escala 4px) ───────────────────────────────── */
-  --space-0: 0;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-7: 32px;
-  --space-8: 40px;
-  --space-9: 48px;
-  --space-10: 64px;
-  --space-11: 80px;
-  --space-12: 112px;
-
-  /* ── Radios ───────────────────────────────────────────────── */
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-pill: 999px;
-
-  /* ── Motion ───────────────────────────────────────────────── */
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --dur-fast: 100ms;
-  --dur-base: 180ms;
-  --dur-slow: 320ms;
-  --dur-slower: 500ms;
-
-  /* ── Z-index ──────────────────────────────────────────────── */
-  --z-base: 1;
-  --z-dropdown: 10;
-  --z-sticky: 100;
-  --z-modal: 1000;
-  --z-toast: 1100;
-
-  /* ── Layout ───────────────────────────────────────────────── */
-  --container-max: 1280px;
-  --topnav-height: 56px;
+  /* Login background */
+  --vs-login-bg:
+    radial-gradient(ellipse at 20% 20%, rgba(26, 43, 76, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(0, 123, 255, 0.25) 0%, transparent 50%),
+    linear-gradient(160deg, rgb(26, 43, 76) 0%, rgb(26, 43, 76) 45%, rgb(0, 90, 200) 100%);
 }
