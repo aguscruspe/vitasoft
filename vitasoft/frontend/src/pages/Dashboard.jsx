@@ -1,334 +1,302 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  fetchPagos,
-  setFiltro,
-  toggleSeleccion,
-  seleccionarTodos,
-  limpiarSeleccion,
-  eliminarPagos,
-} from '../store/pagosSlice';
-import { procesarLote } from '../store/lotesSlice';
-import EditCbuCell from '../components/EditCbuCell';
+import { useNavigate } from 'react-router-dom';
+import { fetchLotes } from '../store/lotesSlice';
+import { fetchPagos } from '../store/pagosSlice';
+import BarChart from '../components/charts/BarChart';
+import DonutChart from '../components/charts/DonutChart';
 
-const BANCOS = ['CREDICOOP', 'GALICIA', 'SANTANDER'];
-const ESTADOS = ['PENDIENTE', 'PROCESADO', 'ELIMINADO'];
+const formatearMoneda = (v) =>
+  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(v || 0);
 
-const formatearFecha = (fechaISO) => {
-  if (!fechaISO) return '—';
-  const fecha = new Date(fechaISO);
-  if (isNaN(fecha)) return '—';
-  return fecha.toLocaleDateString('es-AR', {
-    day: '2-digit', month: '2-digit', year: 'numeric'
-  });
+const formatearFechaCorta = (iso) => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d)) return '—';
+  const hoy = new Date();
+  const ayer = new Date();
+  ayer.setDate(hoy.getDate() - 1);
+  const sameDay = (a, b) => a.toDateString() === b.toDateString();
+  const hh = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  if (sameDay(d, hoy)) return `Hoy, ${hh}`;
+  if (sameDay(d, ayer)) return `Ayer, ${hh}`;
+  return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }) + `, ${hh}`;
 };
 
-const formatearMonto = (monto) =>
-  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(monto);
+const ESTADO_STYLE = {
+  PROCESADO: { color: 'var(--vs-blue)', bg: 'var(--vs-blue-bg)', barra: 'var(--vs-blue)' },
+  PENDIENTE: { color: 'var(--vs-orange)', bg: 'var(--vs-orange-bg)', barra: 'var(--vs-orange)' },
+  ERROR: { color: 'var(--vs-rojo)', bg: 'var(--vs-red-bg)', barra: 'var(--vs-rojo)' },
+  ELIMINADO: { color: 'var(--vs-t4)', bg: 'rgba(100,116,139,0.1)', barra: 'var(--vs-t4)' },
+};
+
+const MetricCard = ({ label, value, sub, subColor, icon, iconBg }) => (
+  <div
+    style={{
+      flex: 1,
+      background: 'var(--card-bg)',
+      border: '1px solid var(--border-soft)',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+      borderRadius: 4,
+      padding: 24,
+    }}
+  >
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+      <span style={{ fontSize: 12, letterSpacing: '1.2px', color: 'var(--text-secondary)' }}>{label}</span>
+      <div
+        style={{
+          width: 27,
+          height: 27,
+          borderRadius: 4,
+          background: iconBg || 'rgba(216,226,255,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {icon}
+      </div>
+    </div>
+    <div style={{ fontSize: 30, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.75px', lineHeight: '36px', marginBottom: 8 }}>
+      {value}
+    </div>
+    <div style={{ fontSize: 14, color: subColor || 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+      {sub}
+    </div>
+  </div>
+);
 
 export default function Dashboard() {
   const dispatch = useDispatch();
-  const { items, loading, error, filtros, seleccionados } = useSelector(
-    (s) => s.pagos
-  );
-  const { loading: loteLoading, error: loteError, ultimoLote } = useSelector(
-    (s) => s.lotes
-  );
-  const [bancoProceso, setBancoProceso] = useState('CREDICOOP');
-  const [ordenDesc, setOrdenDesc] = useState(true);
-  const [modalConfirmar, setModalConfirmar] = useState(false);
-  const [modalEliminar, setModalEliminar] = useState(false);
-
-  const itemsOrdenados = useMemo(() => {
-    const sorted = [...items].sort((a, b) => {
-      const fechaA = a.fechaPago || '';
-      const fechaB = b.fechaPago || '';
-      const cmp = fechaA.localeCompare(fechaB) || a.id - b.id;
-      return ordenDesc ? -cmp : cmp;
-    });
-    return sorted;
-  }, [items, ordenDesc]);
+  const navigate = useNavigate();
+  const lotesItems = useSelector((s) => s.lotes.items);
+  const pagosItems = useSelector((s) => s.pagos.items);
 
   useEffect(() => {
-    dispatch(fetchPagos(filtros));
-  }, [dispatch, filtros]);
+    dispatch(fetchLotes());
+    dispatch(fetchPagos({ banco: '', estado: '' }));
+  }, [dispatch]);
 
-  const handleFiltro = (campo, valor) => {
-    dispatch(setFiltro({ [campo]: valor }));
-  };
+  const metricas = useMemo(() => {
+    const procesados = pagosItems.filter((p) => p.estado === 'PROCESADO');
+    const pendientes = pagosItems.filter((p) => p.estado === 'PENDIENTE');
+    const errores = pagosItems.filter((p) => p.estado === 'ERROR');
+    const volumen = procesados.reduce((acc, p) => acc + Number(p.monto || 0), 0);
+    const totalCount = procesados.length + pendientes.length + errores.length || 1;
+    const pctProcesado = Math.round((procesados.length / totalCount) * 100);
+    return {
+      volumen,
+      pendientes: pendientes.length,
+      errores: errores.length,
+      procesados: procesados.length,
+      pctProcesado,
+      lotesActivos: lotesItems.length,
+    };
+  }, [pagosItems, lotesItems]);
 
-  const toggleTodos = (e) => {
-    if (e.target.checked) {
-      dispatch(seleccionarTodos(itemsOrdenados.map((p) => p.id)));
-    } else {
-      dispatch(limpiarSeleccion());
-    }
-  };
-
-  const handleProcesarClick = () => {
-    if (seleccionados.length === 0) {
-      alert('Seleccioná al menos un pago');
-      return;
-    }
-    setModalConfirmar(true);
-  };
-
-  const handleConfirmar = async () => {
-    setModalConfirmar(false);
-    const res = await dispatch(
-      procesarLote({ banco: bancoProceso, pagoIds: seleccionados })
-    );
-    if (procesarLote.fulfilled.match(res)) {
-      dispatch(limpiarSeleccion());
-      dispatch(fetchPagos(filtros));
-    }
-  };
-
-  const handleEliminar = async () => {
-    setModalEliminar(false);
-    const res = await dispatch(eliminarPagos(seleccionados));
-    if (eliminarPagos.fulfilled.match(res)) {
-      dispatch(fetchPagos(filtros));
-    }
-  };
-
-  const montoTotalSeleccionados = useMemo(() => {
-    return items
-      .filter((p) => seleccionados.includes(p.id))
-      .reduce((acc, p) => acc + Number(p.monto), 0);
-  }, [items, seleccionados]);
-
-  const todosSeleccionados =
-    itemsOrdenados.length > 0 && seleccionados.length === itemsOrdenados.length;
+  const lotesRecientes = useMemo(() => {
+    const sorted = [...lotesItems].sort((a, b) => {
+      const fa = a.fechaCreacion || a.fecha || '';
+      const fb = b.fechaCreacion || b.fecha || '';
+      return fb.localeCompare(fa);
+    });
+    return sorted.slice(0, 3);
+  }, [lotesItems]);
 
   return (
-    <div>
-      <h1 className="page-title">Dashboard de Pagos</h1>
-
-      <div className="card">
-        <div className="filters">
-          <div className="filter-group">
-            <label>Banco</label>
-            <select
-              value={filtros.banco}
-              onChange={(e) => handleFiltro('banco', e.target.value)}
-            >
-              <option value="">Todos</option>
-              {BANCOS.map((b) => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label>Estado</label>
-            <select
-              value={filtros.estado}
-              onChange={(e) => handleFiltro('estado', e.target.value)}
-            >
-              {ESTADOS.map((e) => (
-                <option key={e} value={e}>{e}</option>
-              ))}
-              <option value="">Todos</option>
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label>Orden</label>
-            <button
-              className={ordenDesc ? 'btn-primary' : 'btn-dark'}
-              style={{ padding: '8px 12px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
-              onClick={() => setOrdenDesc((prev) => !prev)}
-              title={ordenDesc ? 'Más recientes primero' : 'Más antiguos primero'}
-            >
-              <span style={{ fontSize: 16 }}>{ordenDesc ? '↓' : '↑'}</span>
-              {ordenDesc ? 'Recientes' : 'Antiguos'}
-            </button>
-          </div>
-
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'end' }}>
-            <div className="filter-group">
-              <label>Procesar con banco</label>
-              <select
-                value={bancoProceso}
-                onChange={(e) => setBancoProceso(e.target.value)}
-              >
-                {BANCOS.map((b) => (
-                  <option key={b} value={b}>{b}</option>
-                ))}
-              </select>
-            </div>
-            <button
-              className="btn-primary"
-              onClick={handleProcesarClick}
-              disabled={loteLoading || seleccionados.length === 0}
-            >
-              {loteLoading ? 'Procesando...' : `Procesar (${seleccionados.length})`}
-            </button>
-            {seleccionados.length > 0 && (
-              <button
-                className="btn-danger"
-                onClick={() => setModalEliminar(true)}
-                disabled={loading}
-              >
-                Eliminar seleccionados ({seleccionados.length})
-              </button>
-            )}
-          </div>
-        </div>
-
-        {error && <div className="error-msg">{error}</div>}
-        {loteError && <div className="error-msg">{loteError}</div>}
-        {ultimoLote && (
-          <div className="success-msg">
-            Lote #{ultimoLote.id} generado correctamente.
-          </div>
-        )}
+    <div className="anim-up" style={{ padding: 32, maxWidth: 1200, margin: '0 auto' }}>
+      <div style={{ marginBottom: 32 }}>
+        <h1 style={{ fontSize: 44, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-1.1px', lineHeight: '44px' }}>
+          Resumen General
+        </h1>
+        <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 4 }}>
+          Monitoreo de actividad financiera de hoy.
+        </p>
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <table>
-          <thead>
-            <tr>
-              <th style={{ width: 40 }}>
-                <input
-                  type="checkbox"
-                  checked={todosSeleccionados}
-                  onChange={toggleTodos}
-                />
-              </th>
-              <th>ID</th>
-              <th>Proveedor</th>
-              <th>CBU</th>
-              <th>Monto</th>
-              <th>Concepto</th>
-              <th>Fecha Pago</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr><td colSpan="8" style={{ textAlign: 'center' }}>Cargando...</td></tr>
-            )}
-            {!loading && itemsOrdenados.length === 0 && (
-              <tr><td colSpan="8" style={{ textAlign: 'center' }}>Sin resultados</td></tr>
-            )}
-            {!loading && itemsOrdenados.map((p) => (
-              <tr key={p.id}>
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={seleccionados.includes(p.id)}
-                    onChange={() => dispatch(toggleSeleccion(p.id))}
-                  />
-                </td>
-                <td>{p.id}</td>
-                <td>{p.proveedor ? p.proveedor.nombre : '—'}</td>
-                <td><EditCbuCell pago={p} /></td>
-                <td>{formatearMonto(p.monto)}</td>
-                <td>{p.concepto}</td>
-                <td>{formatearFecha(p.fechaPago)}</td>
-                <td>{p.estado}</td>
-              </tr>
+      {/* Metric cards */}
+      <div style={{ display: 'flex', gap: 24, marginBottom: 32, flexWrap: 'wrap' }}>
+        <MetricCard
+          label="VOLUMEN PROCESADO"
+          value={formatearMoneda(metricas.volumen)}
+          subColor="var(--vs-blue)"
+          sub={
+            <>
+              <svg width="13.333" height="8" viewBox="0 0 13.333 8" fill="var(--vs-blue)">
+                <path d="M0.933 8L0 7.067L4.933 2.1L7.6 4.767L11.067 1.333L9.333 1.333L9.333 0L13.333 0L13.333 4L12 4L12 2.267L7.6 6.667L4.933 4L0.933 8Z" fillRule="nonzero" />
+              </svg>
+              {metricas.procesados} pagos procesados
+            </>
+          }
+          iconBg="rgba(216,226,255,0.3)"
+          icon={
+            <svg width="15.833" height="15" viewBox="0 0 16 15" fill="var(--vs-blue)">
+              <path d="M0 15V3l8-3 8 3v12h-5V9H5v6H0z" fillRule="nonzero" />
+            </svg>
+          }
+        />
+        <MetricCard
+          label="VALIDACIONES PENDIENTES"
+          value={metricas.pendientes}
+          sub="Requieren revisión manual"
+          iconBg="rgba(255,219,204,0.3)"
+          icon={
+            <svg width="18.333" height="15.833" viewBox="0 0 20 18" fill="var(--vs-orange)">
+              <path d="M1 18L10 2l9 16H1zm9-3a1 1 0 100-2 1 1 0 000 2zm-1-3h2V8h-2v4z" fillRule="nonzero" />
+            </svg>
+          }
+        />
+        <MetricCard
+          label="LOTES ACTIVOS"
+          value={metricas.lotesActivos}
+          sub="Generados en el sistema"
+          iconBg="rgba(216,226,255,0.3)"
+          icon={
+            <svg width="15" height="15.875" viewBox="0 0 15 15.875" fill="var(--text-secondary)">
+              <path d="M7.5 15.875L0 10.042L1.375 9L7.5 13.75L13.625 9L15 10.042L7.5 15.875ZM7.5 11.667L0 5.833L7.5 0L15 5.833L7.5 11.667Z" fillRule="nonzero" />
+            </svg>
+          }
+        />
+      </div>
+
+      {/* Charts */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: 24, marginBottom: 32 }}>
+        <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border-soft)', borderRadius: 4, padding: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+            <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Volumen de Pagos (30 días)</span>
+            <span
+              onClick={() => navigate('/historial')}
+              style={{ fontSize: 14, fontWeight: 500, color: 'var(--vs-blue)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+            >
+              Ver detalle
+              <svg width="4.933" height="8" viewBox="0 0 5 8" fill="currentColor">
+                <path d="M3.067 4L0 0.933L0.933 0L4.933 4L0.933 8L0 7.067L3.067 4Z" fillRule="nonzero" />
+              </svg>
+            </span>
+          </div>
+          <div style={{ position: 'relative' }}>
+            <div
+              style={{
+                position: 'absolute',
+                left: -28,
+                top: 0,
+                height: 260,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                paddingBottom: 8,
+              }}
+            >
+              {['3M', '2M', '1M', '0'].map((l) => (
+                <span key={l} style={{ fontSize: 10, color: 'var(--vs-t5)', lineHeight: '12px' }}>
+                  {l}
+                </span>
+              ))}
+            </div>
+            <div style={{ border: '1px solid var(--vs-border-3)', padding: '0 8px 8px' }}>
+              <BarChart />
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 8px 0', marginTop: 4 }}>
+            {['01 Mar', '15 Mar', '30 Mar'].map((l) => (
+              <span key={l} style={{ fontSize: 10, color: 'var(--vs-t5)' }}>
+                {l}
+              </span>
             ))}
-          </tbody>
-        </table>
+          </div>
+        </div>
+
+        <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border-soft)', borderRadius: 4, padding: 24 }}>
+          <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', display: 'block', marginBottom: 24 }}>
+            Estado de Pagos
+          </span>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+            <DonutChart pct={metricas.pctProcesado} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {[
+              ['var(--vs-blue)', 'Procesados', metricas.procesados],
+              ['var(--vs-rojo)', 'Con Error', metricas.errores],
+              ['var(--vs-orange)', 'Pendientes', metricas.pendientes],
+            ].map(([c, l, v]) => (
+              <div key={l} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
+                  <span style={{ fontSize: 14, color: 'var(--vs-t2)' }}>{l}</span>
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                  {v}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {modalEliminar && (
-        <div
-          onClick={() => setModalEliminar(false)}
-          style={{
-            position: 'fixed', inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: 'var(--modal-bg)', borderRadius: 8, padding: 28,
-              width: 420, maxWidth: '90vw',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-            }}
-          >
-            <h2 style={{ margin: '0 0 16px', color: 'var(--text-primary)', fontSize: 18 }}>
-              Confirmar eliminación
-            </h2>
-            <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)' }}>
-              ¿Estás seguro que querés eliminar{' '}
-              <strong>{seleccionados.length} pagos</strong>?
-              {' '}Esta acción no se puede deshacer.
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <button
-                className="btn-secondary"
-                onClick={() => setModalEliminar(false)}
-                style={{ padding: '8px 20px' }}
-              >
-                Cancelar
-              </button>
-              <button
-                className="btn-danger"
-                onClick={handleEliminar}
-                style={{ padding: '8px 20px' }}
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
+      {/* Recent activity */}
+      <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border-soft)', borderRadius: 4, overflow: 'hidden' }}>
+        <div style={{ padding: 24, borderBottom: '1px solid var(--vs-border-3)' }}>
+          <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Actividad Reciente (Lotes)</span>
         </div>
-      )}
-
-      {modalConfirmar && (
-        <div
-          onClick={() => setModalConfirmar(false)}
-          style={{
-            position: 'fixed', inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: 'var(--modal-bg)', borderRadius: 8, padding: 28,
-              width: 420, maxWidth: '90vw',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-            }}
-          >
-            <h2 style={{ margin: '0 0 16px', color: 'var(--text-primary)', fontSize: 18 }}>
-              Confirmar procesamiento
-            </h2>
-            <p style={{ margin: '0 0 8px', color: 'var(--text-secondary)' }}>
-              ¿Estás seguro que querés procesar{' '}
-              <strong>{seleccionados.length} pagos</strong> con banco{' '}
-              <strong>{bancoProceso}</strong>?
-            </p>
-            <p style={{ margin: '0 0 24px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
-              Monto total: {formatearMonto(montoTotalSeleccionados)}
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <button
-                className="btn-secondary"
-                onClick={() => setModalConfirmar(false)}
-                style={{ padding: '8px 20px' }}
-              >
-                Cancelar
-              </button>
-              <button
-                className="btn-primary"
-                onClick={handleConfirmar}
-                style={{ padding: '8px 20px' }}
-              >
-                Confirmar
-              </button>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 215px 138px 215px', background: 'var(--card-bg)', borderBottom: '1px solid var(--vs-border-3)' }}>
+          {['NOMBRE DEL LOTE', 'FECHA', 'MONTO', 'ESTADO'].map((h) => (
+            <div key={h} style={{ padding: '10px 24px', fontSize: 11, fontWeight: 700, letterSpacing: '1.1px', color: 'var(--text-secondary)' }}>
+              {h}
             </div>
-          </div>
+          ))}
         </div>
-      )}
+        {lotesRecientes.length === 0 && (
+          <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-secondary)' }}>Sin lotes generados aún</div>
+        )}
+        {lotesRecientes.map((l) => {
+          const total = l.pagos
+            ? l.pagos.reduce((acc, p) => acc + Number(p.monto || 0), 0)
+            : Number(l.total || 0);
+          const estado = (l.estado || 'PROCESADO').toUpperCase();
+          const sty = ESTADO_STYLE[estado] || ESTADO_STYLE.PROCESADO;
+          return (
+            <div
+              key={l.id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 215px 138px 215px',
+                borderBottom: '1px solid rgba(231,232,233,0.5)',
+                position: 'relative',
+              }}
+            >
+              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: sty.barra }} />
+              <div style={{ padding: '16px 24px' }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>
+                  Lote {l.banco || ''} #{l.id}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--vs-t5)', marginTop: 2 }}>ID: L-{l.id}</div>
+              </div>
+              <div style={{ padding: 24, fontSize: 14, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}>
+                {formatearFechaCorta(l.fechaCreacion || l.fecha)}
+              </div>
+              <div
+                style={{
+                  padding: 24,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: 'var(--text-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {formatearMoneda(total)}
+              </div>
+              <div style={{ padding: '21.75px 24px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                <span className="status-badge" style={{ color: sty.color, background: sty.bg }}>
+                  {estado}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
