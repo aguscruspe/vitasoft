@@ -1,4 +1,38 @@
 :root {
-  --vs-rojo: #DC3545;
-  --vs-verde: #28A745;
+  /* Brand */
+  --vs-blue:        #0059BB;
+  --vs-blue-2:      #0070EA;
+  --vs-blue-light:  #007BFF;
+  --vs-blue-bg:     rgba(0, 89, 187, 0.1);
+  --vs-orange:      #9E3D00;
+  --vs-orange-bg:   rgba(158, 61, 0, 0.1);
+  --vs-rojo:        #BA1A1A;
+  --vs-red-bg:      rgba(186, 26, 26, 0.1);
+  --vs-verde:       #16A34A;
+
+  /* Text scale (T1 darkest → T6 lightest) */
+  --vs-t1: rgb(25, 28, 29);
+  --vs-t2: rgb(65, 71, 84);
+  --vs-t3: rgb(78, 94, 130);
+  --vs-t4: rgb(100, 116, 139);
+  --vs-t5: rgb(113, 119, 134);
+  --vs-t6: rgb(148, 163, 184);
+
+  /* Borders / surfaces */
+  --vs-border:   rgba(193, 198, 215, 0.15);
+  --vs-border-2: rgb(193, 198, 215);
+  --vs-border-3: rgb(225, 227, 228);
+  --vs-border-4: rgb(226, 232, 240);
+  --vs-bg:       rgb(248, 249, 250);
+  --vs-bg-2:     rgb(243, 244, 245);
+  --vs-sidebar:  rgb(248, 250, 252);
+
+  /* Brand gradient */
+  --vs-grad-blue: linear-gradient(rgb(0, 89, 187) 0%, rgb(0, 112, 234) 100%);
+
+  /* Login background */
+  --vs-login-bg:
+    radial-gradient(ellipse at 20% 20%, rgba(26, 43, 76, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(0, 123, 255, 0.25) 0%, transparent 50%),
+    linear-gradient(160deg, rgb(26, 43, 76) 0%, rgb(26, 43, 76) 45%, rgb(0, 90, 200) 100%);
 }

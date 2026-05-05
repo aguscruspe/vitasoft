@@ -1,20 +1,23 @@
 :root[data-theme="light"] {
-  --bg-primary: #F8F9FA;
+  --bg-primary: var(--vs-bg);
   --bg-secondary: #ffffff;
-  --bg-sidebar: #1A2B4C;
-  --text-primary: #1A2B4C;
-  --text-secondary: #6C757D;
-  --text-sidebar: #ffffff;
-  --border-color: #dee2e6;
-  --table-header: #1A2B4C;
-  --table-header-text: #ffffff;
-  --table-row-hover: #f1f3f5;
+  --bg-sidebar: var(--vs-sidebar);
+  --text-primary: var(--vs-t1);
+  --text-secondary: var(--vs-t3);
+  --text-sidebar: var(--vs-t1);
+  --text-muted: var(--vs-t4);
+  --border-color: var(--vs-border-4);
+  --border-soft: var(--vs-border);
+  --table-header: #ffffff;
+  --table-header-text: var(--vs-t3);
+  --table-row-hover: rgba(0, 89, 187, 0.04);
   --card-bg: #ffffff;
-  --input-bg: #ffffff;
-  --input-border: #ced4da;
+  --input-bg: var(--vs-bg-2);
+  --input-border: var(--vs-border-2);
   --modal-bg: #ffffff;
-  --btn-primary: #007BFF;
+  --btn-primary: var(--vs-blue);
   --btn-primary-text: #ffffff;
+  --topbar-bg: rgba(255, 255, 255, 0.8);
 }
 
 :root[data-theme="dark"] {
@@ -24,7 +27,9 @@
   --text-primary: #e6edf3;
   --text-secondary: #8b949e;
   --text-sidebar: #ffffff;
+  --text-muted: #8b949e;
   --border-color: #30363d;
+  --border-soft: rgba(255, 255, 255, 0.06);
   --table-header: #161b22;
   --table-header-text: #e6edf3;
   --table-row-hover: #1c2128;
@@ -32,6 +37,7 @@
   --input-bg: #0d1117;
   --input-border: #30363d;
   --modal-bg: #161b22;
-  --btn-primary: #007BFF;
+  --btn-primary: var(--vs-blue-2);
   --btn-primary-text: #ffffff;
+  --topbar-bg: rgba(13, 17, 23, 0.85);
 }
