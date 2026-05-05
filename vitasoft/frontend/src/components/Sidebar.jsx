@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../store/authSlice';
 import { useTheme } from '../context/ThemeContext';
+import { useGeneracion } from '../context/GeneracionContext';
 import VSLogo from './VSLogo';
 
 const NAV_ITEMS = [
@@ -36,6 +37,26 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+  {
+    key: 'usuarios',
+    to: '/usuarios',
+    label: 'Usuarios',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+        <path d="M9 9a4 4 0 100-8 4 4 0 000 8zm0 2c-5.33 0-8 2.67-8 4v1h16v-1c0-1.33-2.67-4-8-4z" />
+      </svg>
+    ),
+  },
+  {
+    key: 'ajustes',
+    to: '/ajustes',
+    label: 'Ajustes',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+        <path d="M7.5 18l-.625-2.125a5.63 5.63 0 01-.888-.512L3.75 16.25l-1.5-2.5 1.688-1.375A5.8 5.8 0 013.875 9a5.8 5.8 0 01.063-1.375L2.25 6.25l1.5-2.5 2.25.875a5.63 5.63 0 01.875-.5L7.5 2h3l.625 2.125c.313.137.613.3.9.487L14.25 3.75l1.5 2.5-1.688 1.375A5.8 5.8 0 0114.125 9a5.8 5.8 0 01-.063 1.375L15.75 11.75l-1.5 2.5-2.238-.875a5.63 5.63 0 01-.887.5L10.5 16H7.5zm1.5-4.5a4.5 4.5 0 100-9 4.5 4.5 0 000 9zm0-2.25a2.25 2.25 0 110-4.5 2.25 2.25 0 010 4.5z" />
+      </svg>
+    ),
+  },
 ];
 
 const linkBase = {
@@ -58,13 +79,14 @@ export default function Sidebar() {
   const dispatch = useDispatch();
   const usuario = useSelector((s) => s.auth.usuario);
   const { theme, setTheme } = useTheme();
+  const { openModal } = useGeneracion();
+  const [reportesOpen, setReportesOpen] = useState(false);
 
   const isActive = (to) => location.pathname === to;
   const handleLogout = () => {
     dispatch(logout());
     navigate('/login');
   };
-
   const cycleTheme = () => {
     const next = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
     setTheme(next);
@@ -82,16 +104,14 @@ export default function Sidebar() {
         flexShrink: 0,
       }}
     >
-      {/* Logo */}
       <div style={{ padding: '24px 24px 0', display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
         <VSLogo size={112} color="var(--text-primary)" notchColor="var(--bg-sidebar)" />
       </div>
 
-      {/* CTA: Nuevo Lote */}
       <div style={{ padding: '0 24px 8px' }}>
         <button
           className="btn-blue-grad"
-          onClick={() => navigate('/importar')}
+          onClick={openModal}
           style={{
             width: '100%',
             padding: '10px 0',
@@ -111,8 +131,7 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* Navegación */}
-      <nav style={{ padding: '8px 16px', flex: 1 }}>
+      <nav style={{ padding: '8px 16px', flex: 1, overflowY: 'auto' }}>
         {NAV_ITEMS.map((item) => {
           const active = isActive(item.to);
           return (
@@ -146,19 +165,43 @@ export default function Sidebar() {
             </div>
           );
         })}
+
+        {/* Reportes (colapsable, sin destino) */}
+        <div
+          onClick={() => setReportesOpen((v) => !v)}
+          style={{ ...linkBase, justifyContent: 'space-between', color: 'var(--text-muted)' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ width: 18, height: 18, display: 'flex', alignItems: 'center' }}>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+                <path d="M1 16V2h16v14H1zm2-2h12v-2H3v2zm0-4h5V8H3v2zm7 0h5V8h-5v2zm-7-4h12V4H3v2z" />
+              </svg>
+            </span>
+            <span style={{ letterSpacing: '-0.35px' }}>Reportes</span>
+          </div>
+          <svg
+            width="7"
+            height="4.317"
+            viewBox="0 0 7 4.317"
+            fill="currentColor"
+            style={{ transform: reportesOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}
+          >
+            <path d="M3.5 4.317L0 0.817L0.817 0L3.5 2.683L6.183 0L7 0.817L3.5 4.317Z" fillRule="nonzero" />
+          </svg>
+        </div>
+        {reportesOpen && (
+          <div style={{ paddingLeft: 32, fontSize: 12, color: 'var(--text-muted)', padding: '4px 0 8px 32px' }}>
+            Próximamente
+          </div>
+        )}
       </nav>
 
-      {/* Footer: theme toggle + user */}
       <div style={{ borderTop: '1px solid var(--border-soft)', padding: '12px 16px' }}>
-        <div
-          onClick={cycleTheme}
-          style={{ ...linkBase, color: 'var(--text-muted)' }}
-          title={`Tema: ${theme}`}
-        >
+        <div onClick={cycleTheme} style={{ ...linkBase, color: 'var(--text-muted)' }} title={`Tema: ${theme}`}>
           <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
             <path d="M10 13a3 3 0 100-6 3 3 0 000 6zm0-10a1 1 0 011 1v1a1 1 0 01-2 0V4a1 1 0 011-1zm0 14a1 1 0 011 1v1a1 1 0 01-2 0v-1a1 1 0 011-1zM3.22 4.64a1 1 0 011.42 0l.7.7a1 1 0 01-1.41 1.42l-.71-.71a1 1 0 010-1.41zm11.31 9.9a1 1 0 011.42 0l.7.71a1 1 0 01-1.41 1.41l-.71-.71a1 1 0 010-1.41zM1 11h1a1 1 0 010 2H1a1 1 0 010-2zm16 0h1a1 1 0 010 2h-1a1 1 0 010-2zM4.64 15.36l.7-.71a1 1 0 011.42 1.41l-.71.71a1 1 0 01-1.41-1.41zm9.9-11.31l.71-.7a1 1 0 011.41 1.41l-.7.71a1 1 0 01-1.42-1.42z" />
           </svg>
-          <span style={{ letterSpacing: '-0.35px', textTransform: 'capitalize' }}>
+          <span style={{ letterSpacing: '-0.35px' }}>
             Tema: {theme === 'system' ? 'Auto' : theme === 'light' ? 'Claro' : 'Oscuro'}
           </span>
         </div>
