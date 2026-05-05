@@ -2,6 +2,15 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchLotes } from '../store/lotesSlice';
 import { lotesService } from '../services/lotesService';
+import './Historial.css';
+
+const BANCOS = ['CREDICOOP', 'GALICIA', 'SANTANDER'];
+
+const BANK_CLASS = {
+  CREDICOOP: 'bank-credicoop',
+  GALICIA: 'bank-galicia',
+  SANTANDER: 'bank-santander',
+};
 
 const formatearFecha = (fechaISO) => {
   if (!fechaISO) return '—';
@@ -21,16 +30,21 @@ export default function Historial() {
   const dispatch = useDispatch();
   const { items, loading, error } = useSelector((s) => s.lotes);
   const [ordenDesc, setOrdenDesc] = useState(true);
+  const [filtroBanco, setFiltroBanco] = useState('');
 
-  const itemsOrdenados = useMemo(() => {
-    const sorted = [...items].sort((a, b) => {
+  const itemsFiltrados = useMemo(() => {
+    let filtered = items;
+    if (filtroBanco) {
+      filtered = filtered.filter((l) => l.banco === filtroBanco);
+    }
+    const sorted = [...filtered].sort((a, b) => {
       const fechaA = a.fechaCreacion || a.fecha || '';
       const fechaB = b.fechaCreacion || b.fecha || '';
       const cmp = fechaA.localeCompare(fechaB) || a.id - b.id;
       return ordenDesc ? -cmp : cmp;
     });
     return sorted;
-  }, [items, ordenDesc]);
+  }, [items, ordenDesc, filtroBanco]);
 
   useEffect(() => {
     dispatch(fetchLotes());
@@ -53,84 +67,112 @@ export default function Historial() {
     }
   };
 
-  return (
-    <div>
-      <h1 className="page-title">Historial de Lotes</h1>
+  const cantidadPagos = (lote) =>
+    lote.pagos ? lote.pagos.length : (lote.cantidadPagos ?? '—');
 
-      <div className="card">
-        <div className="filters">
-          <div className="filter-group">
-            <label>Orden</label>
+  const totalLote = (lote) => {
+    if (lote.pagos && lote.pagos.length > 0) {
+      return formatearMoneda(lote.pagos.reduce((acc, p) => acc + Number(p.monto), 0));
+    }
+    return lote.total != null ? formatearMoneda(lote.total) : '—';
+  };
+
+  return (
+    <div className="historial-page">
+      <h1 className="historial-title">Historial de Lotes</h1>
+
+      {/* Filter Chips */}
+      <div className="historial-filters">
+        <div className="chip-group">
+          <span className="filter-label">Banco</span>
+          <button
+            className={`chip${filtroBanco === '' ? ' active' : ''}`}
+            onClick={() => setFiltroBanco('')}
+          >
+            Todos
+          </button>
+          {BANCOS.map((b) => (
             <button
-              className={ordenDesc ? 'btn-primary' : 'btn-dark'}
-              style={{ padding: '8px 12px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
-              onClick={() => setOrdenDesc((prev) => !prev)}
-              title={ordenDesc ? 'Más recientes primero' : 'Más antiguos primero'}
+              key={b}
+              className={`chip${filtroBanco === b ? ' active' : ''}`}
+              onClick={() => setFiltroBanco(b)}
             >
-              <span style={{ fontSize: 16 }}>{ordenDesc ? '↓' : '↑'}</span>
-              {ordenDesc ? 'Recientes' : 'Antiguos'}
+              {b}
             </button>
-          </div>
+          ))}
         </div>
+
+        <button
+          className="btn-order"
+          onClick={() => setOrdenDesc((prev) => !prev)}
+          title={ordenDesc ? 'Más recientes primero' : 'Más antiguos primero'}
+        >
+          {ordenDesc ? '↓' : '↑'} {ordenDesc ? 'Recientes' : 'Antiguos'}
+        </button>
       </div>
 
-      {error && <div className="error-msg">{error}</div>}
+      {/* Error */}
+      {error && <div className="dashboard-alert alert-error">{error}</div>}
 
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Banco</th>
-            <th>Fecha</th>
-            <th>Pagos</th>
-            <th>Total</th>
-            <th>Archivos</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading && (
-            <tr><td colSpan="6" style={{ textAlign: 'center' }}>Cargando...</td></tr>
-          )}
-          {!loading && itemsOrdenados.length === 0 && (
-            <tr><td colSpan="6" style={{ textAlign: 'center' }}>Sin lotes aún</td></tr>
-          )}
-          {!loading && itemsOrdenados.map((lote) => {
-            const txt = archivoDe(lote, 'TXT');
-            const pdf = archivoDe(lote, 'PDF');
-            return (
-              <tr key={lote.id}>
-                <td>{lote.id}</td>
-                <td>{lote.banco}</td>
-                <td>{formatearFecha(lote.fechaCreacion || lote.fecha)}</td>
-                <td>{lote.pagos ? lote.pagos.length : (lote.cantidadPagos ?? '—')}</td>
-                <td>
-                  {lote.pagos && lote.pagos.length > 0
-                    ? formatearMoneda(lote.pagos.reduce((acc, p) => acc + Number(p.monto), 0))
-                    : lote.total != null ? formatearMoneda(lote.total) : '—'}
-                </td>
-                <td style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    className="btn-dark"
-                    style={{ padding: '4px 10px', fontSize: 12 }}
-                    onClick={() => descargar(txt)}
-                    disabled={!txt}
-                  >
-                    TXT
-                  </button>
-                  <button
-                    className="btn-primary"
-                    style={{ padding: '4px 10px', fontSize: 12 }}
-                    onClick={() => descargar(pdf)}
-                    disabled={!pdf}
-                  >
-                    PDF
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      {/* Cards Grid */}
+      <div className="historial-grid">
+        {loading && (
+          <div className="historial-loading">Cargando...</div>
+        )}
+
+        {!loading && itemsFiltrados.length === 0 && (
+          <div className="historial-empty">Sin lotes aún</div>
+        )}
+
+        {!loading && itemsFiltrados.map((lote) => {
+          const txt = archivoDe(lote, 'TXT');
+          const pdf = archivoDe(lote, 'PDF');
+          const bankClass = BANK_CLASS[lote.banco] || 'bank-default';
+
+          return (
+            <div className="lote-card" key={lote.id}>
+              <div className="lote-card-header">
+                <span className="lote-card-id">Lote #{lote.id}</span>
+                <span className={`bank-badge ${bankClass}`}>{lote.banco}</span>
+              </div>
+
+              <div className="lote-card-details">
+                <div className="lote-detail">
+                  <span className="lote-detail-label">Fecha</span>
+                  <span className="lote-detail-value">
+                    {formatearFecha(lote.fechaCreacion || lote.fecha)}
+                  </span>
+                </div>
+                <div className="lote-detail">
+                  <span className="lote-detail-label">Pagos</span>
+                  <span className="lote-detail-value">{cantidadPagos(lote)}</span>
+                </div>
+                <div className="lote-detail" style={{ gridColumn: '1 / -1' }}>
+                  <span className="lote-detail-label">Total</span>
+                  <span className="lote-detail-value total">{totalLote(lote)}</span>
+                </div>
+              </div>
+
+              <div className="lote-card-actions">
+                <button
+                  className="btn-download btn-download-txt"
+                  onClick={() => descargar(txt)}
+                  disabled={!txt}
+                >
+                  Descargar TXT
+                </button>
+                <button
+                  className="btn-download btn-download-pdf"
+                  onClick={() => descargar(pdf)}
+                  disabled={!pdf}
+                >
+                  Descargar PDF
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

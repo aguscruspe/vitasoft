@@ -1,37 +1,161 @@
+/* ─────────────────────────────────────────────────────────────
+   VitaSoft — Theme (color tokens)
+   Paleta original: navy #1A2B4C, blue #007BFF, rojo, verde.
+   Ejecución fintech minimalista: blancos con tinte frío, hairlines,
+   sombras planas, contraste sobrio.
+   ───────────────────────────────────────────────────────────── */
+
 :root[data-theme="light"] {
-  --bg-primary: #F8F9FA;
-  --bg-secondary: #ffffff;
+  /* Superficies — blancos con tinte frío muy sutil */
+  --bg-primary: #FAFBFC;
+  --bg-secondary: #FFFFFF;
+  --bg-elevated: #FFFFFF;
+  --bg-subtle: #F4F6F8;
   --bg-sidebar: #1A2B4C;
-  --text-primary: #1A2B4C;
-  --text-secondary: #6C757D;
-  --text-sidebar: #ffffff;
-  --border-color: #dee2e6;
-  --table-header: #1A2B4C;
-  --table-header-text: #ffffff;
-  --table-row-hover: #f1f3f5;
-  --card-bg: #ffffff;
-  --input-bg: #ffffff;
-  --input-border: #ced4da;
-  --modal-bg: #ffffff;
-  --btn-primary: #007BFF;
-  --btn-primary-text: #ffffff;
+  --bg-overlay: rgba(26, 43, 76, 0.5);
+
+  /* Tinta / texto */
+  --text-primary: #0F1729;
+  --text-secondary: #4A5468;
+  --text-tertiary: #8A93A4;
+  --text-quaternary: #B5BBC7;
+  --text-on-accent: #FFFFFF;
+  --text-sidebar: #FFFFFF;
+  --text-display: #0A1322;
+
+  /* Bordes — hairlines */
+  --border-color: #E6E9EE;
+  --border-subtle: #EEF1F4;
+  --border-strong: #D4D9E0;
+  --border-focus: #007BFF;
+
+  /* Acentos — paleta original */
+  --accent: #007BFF;
+  --accent-hover: #0062CC;
+  --accent-active: #0052AB;
+  --accent-soft: rgba(0, 123, 255, 0.08);
+  --accent-soft-hover: rgba(0, 123, 255, 0.12);
+  --accent-ink: #1A2B4C;
+  --accent-ink-hover: #0F1B33;
+
+  /* Tablas */
+  --table-header: #FAFBFC;
+  --table-header-text: #4A5468;
+  --table-header-border: #E6E9EE;
+  --table-row-hover: #F7F9FB;
+  --table-row-zebra: #FAFBFC;
+
+  /* Componentes */
+  --card-bg: #FFFFFF;
+  --card-border: #E6E9EE;
+  --input-bg: #FFFFFF;
+  --input-border: #D4D9E0;
+  --input-placeholder: #A7AEBB;
+  --modal-bg: #FFFFFF;
+
+  --btn-primary: #1A2B4C;
+  --btn-primary-text: #FFFFFF;
+  --btn-primary-hover: #0F1B33;
+  --btn-accent: #007BFF;
+  --btn-accent-text: #FFFFFF;
+  --btn-accent-hover: #0062CC;
+
+  /* Sombras casi planas — minimalismo fintech */
+  --shadow-xs: 0 1px 0 rgba(15, 23, 41, 0.04);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 41, 0.04), 0 1px 1px rgba(15, 23, 41, 0.03);
+  --shadow-md: 0 2px 6px rgba(15, 23, 41, 0.05), 0 1px 2px rgba(15, 23, 41, 0.03);
+  --shadow-lg: 0 6px 16px rgba(15, 23, 41, 0.07), 0 2px 4px rgba(15, 23, 41, 0.04);
+  --shadow-xl: 0 16px 40px rgba(15, 23, 41, 0.10), 0 4px 8px rgba(15, 23, 41, 0.05);
+  --shadow-accent: 0 4px 12px rgba(0, 123, 255, 0.18);
+  --shadow-focus: 0 0 0 3px rgba(0, 123, 255, 0.15);
+
+  /* Estados */
+  --success: #28A745;
+  --success-text: #1B6E2E;
+  --success-bg: rgba(40, 167, 69, 0.08);
+  --success-border: rgba(40, 167, 69, 0.2);
+  --danger: #DC3545;
+  --danger-text: #A02530;
+  --danger-bg: rgba(220, 53, 69, 0.07);
+  --danger-border: rgba(220, 53, 69, 0.2);
+  --warning: #D97706;
+  --warning-bg: rgba(217, 119, 6, 0.08);
+  --warning-border: rgba(217, 119, 6, 0.2);
+  --info: #007BFF;
+  --info-bg: rgba(0, 123, 255, 0.08);
+  --info-border: rgba(0, 123, 255, 0.2);
 }
 
 :root[data-theme="dark"] {
-  --bg-primary: #0d1117;
-  --bg-secondary: #161b22;
-  --bg-sidebar: #0d1117;
-  --text-primary: #e6edf3;
-  --text-secondary: #8b949e;
-  --text-sidebar: #ffffff;
-  --border-color: #30363d;
-  --table-header: #161b22;
-  --table-header-text: #e6edf3;
-  --table-row-hover: #1c2128;
-  --card-bg: #161b22;
-  --input-bg: #0d1117;
-  --input-border: #30363d;
-  --modal-bg: #161b22;
-  --btn-primary: #007BFF;
-  --btn-primary-text: #ffffff;
+  /* Superficies — negros con tinte frío */
+  --bg-primary: #0A0E16;
+  --bg-secondary: #11161F;
+  --bg-elevated: #161C26;
+  --bg-subtle: #0E131C;
+  --bg-sidebar: #06090F;
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+
+  --text-primary: #F0F2F5;
+  --text-secondary: #8A93A4;
+  --text-tertiary: #5C6577;
+  --text-quaternary: #3D4555;
+  --text-on-accent: #FFFFFF;
+  --text-sidebar: #F0F2F5;
+  --text-display: #FFFFFF;
+
+  --border-color: #1F2734;
+  --border-subtle: #161D27;
+  --border-strong: #2A3443;
+  --border-focus: #2D8FFF;
+
+  --accent: #2D8FFF;
+  --accent-hover: #4FA1FF;
+  --accent-active: #1A7EE8;
+  --accent-soft: rgba(45, 143, 255, 0.10);
+  --accent-soft-hover: rgba(45, 143, 255, 0.16);
+  --accent-ink: #F0F2F5;
+  --accent-ink-hover: #FFFFFF;
+
+  --table-header: #0E131C;
+  --table-header-text: #8A93A4;
+  --table-header-border: #1F2734;
+  --table-row-hover: #161C26;
+  --table-row-zebra: #0E131C;
+
+  --card-bg: #11161F;
+  --card-border: #1F2734;
+  --input-bg: #0E131C;
+  --input-border: #2A3443;
+  --input-placeholder: #5C6577;
+  --modal-bg: #11161F;
+
+  --btn-primary: #F0F2F5;
+  --btn-primary-text: #0A0E16;
+  --btn-primary-hover: #FFFFFF;
+  --btn-accent: #2D8FFF;
+  --btn-accent-text: #FFFFFF;
+  --btn-accent-hover: #4FA1FF;
+
+  --shadow-xs: 0 1px 0 rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 6px 16px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.7), 0 4px 8px rgba(0, 0, 0, 0.5);
+  --shadow-accent: 0 4px 12px rgba(45, 143, 255, 0.3);
+  --shadow-focus: 0 0 0 3px rgba(45, 143, 255, 0.25);
+
+  --success: #3FBA5C;
+  --success-text: #6FD988;
+  --success-bg: rgba(63, 186, 92, 0.12);
+  --success-border: rgba(63, 186, 92, 0.25);
+  --danger: #FF5566;
+  --danger-text: #FF8593;
+  --danger-bg: rgba(255, 85, 102, 0.12);
+  --danger-border: rgba(255, 85, 102, 0.25);
+  --warning: #E9A33A;
+  --warning-bg: rgba(233, 163, 58, 0.12);
+  --warning-border: rgba(233, 163, 58, 0.25);
+  --info: #2D8FFF;
+  --info-bg: rgba(45, 143, 255, 0.12);
+  --info-border: rgba(45, 143, 255, 0.25);
 }

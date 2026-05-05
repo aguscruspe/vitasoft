@@ -1,39 +1,16 @@
 import React, { useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { importarPagos } from '../store/pagosSlice';
+import './Importar.css';
 
-const styles = {
-  dropzone: {
-    border: '2px dashed var(--btn-primary)',
-    borderRadius: 8,
-    padding: 60,
-    textAlign: 'center',
-    background: 'var(--card-bg)',
-    cursor: 'pointer',
-    transition: 'all 0.2s',
-  },
-  dropzoneActive: {
-    background: 'var(--table-row-hover)',
-    borderColor: 'var(--text-primary)',
-  },
-  icon: {
-    fontSize: 40,
-    color: 'var(--btn-primary)',
-    marginBottom: 12,
-  },
-  info: {
-    marginTop: 20,
-    padding: 16,
-    background: 'var(--card-bg)',
-    borderRadius: 6,
-  },
-  fileName: {
-    marginTop: 14,
-    fontWeight: 600,
-    color: 'var(--text-primary)',
-    wordBreak: 'break-all',
-  },
-};
+const COLUMNAS = [
+  { nombre: 'nombre', obligatoria: true },
+  { nombre: 'cuit', obligatoria: true },
+  { nombre: 'cbu', obligatoria: true },
+  { nombre: 'monto', obligatoria: true },
+  { nombre: 'concepto', obligatoria: false },
+  { nombre: 'fechaPago', obligatoria: false },
+];
 
 export default function Importar() {
   const dispatch = useDispatch();
@@ -100,7 +77,6 @@ export default function Importar() {
         setArchivo(null);
         resetInput();
       } else if (importarPagos.rejected.match(res)) {
-        // el error ya queda en el store; nos aseguramos de tener un mensaje
         setLocalError(res.payload || 'No se pudo importar el archivo');
       }
     } catch (err) {
@@ -111,32 +87,37 @@ export default function Importar() {
   const mensajeError = localError || error;
 
   return (
-    <div>
-      <h1 className="page-title">Importar Pagos</h1>
+    <div className="importar-page">
+      <div className="importar-header">
+        <h1 className="importar-title">Importar Pagos</h1>
+        <p className="importar-subtitle">
+          Subí un archivo Excel con los pagos a procesar
+        </p>
+      </div>
 
       <label
         htmlFor="file-input"
-        style={{
-          ...styles.dropzone,
-          ...(dragging ? styles.dropzoneActive : {}),
-          display: 'block',
-        }}
+        className={`importar-dropzone${dragging ? ' dragging' : ''}`}
         onDrop={onDrop}
         onDragOver={onDragOver}
         onDragEnter={onDragOver}
         onDragLeave={onDragLeave}
       >
-        <div style={styles.icon}>⬆</div>
-        <div style={{ fontSize: 16, marginBottom: 6 }}>
-          Arrastrá tu archivo Excel acá
-        </div>
-        <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-          o hacé click para seleccionarlo
-        </div>
+        <div className="dropzone-icon">&#8593;</div>
+        <div className="dropzone-title">Arrastrá tu archivo Excel acá</div>
+        <div className="dropzone-hint">o hacé click para seleccionarlo</div>
+        <span className="dropzone-btn">Seleccionar archivo</span>
+        <button
+          className="dropzone-btn-importar"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onImportar(); }}
+          disabled={!archivo || loading}
+        >
+          {loading ? 'Importando...' : 'Importar'}
+        </button>
         {archivo && (
-          <div style={styles.fileName} data-testid="archivo-nombre">
-            📄 {archivo.name}
-            <span style={{ marginLeft: 8, fontWeight: 400, color: 'var(--text-secondary)', fontSize: 12 }}>
+          <div className="dropzone-file" data-testid="archivo-nombre">
+            <span>&#128196; {archivo.name}</span>
+            <span className="dropzone-file-size">
               ({Math.round(archivo.size / 1024)} KB)
             </span>
           </div>
@@ -151,46 +132,91 @@ export default function Importar() {
         />
       </label>
 
-      <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
-        <button
-          className="btn-primary"
-          onClick={onImportar}
-          disabled={!archivo || loading}
-        >
-          {loading ? 'Importando...' : 'Importar'}
-        </button>
-        {archivo && (
+      {archivo && (
+        <div className="importar-actions">
           <button
-            className="btn-secondary"
+            className="importar-btn-secondary"
             onClick={onLimpiar}
             disabled={loading}
           >
             Limpiar
           </button>
-        )}
-      </div>
-
-      {mensajeError && (
-        <div className="error-msg" style={{ marginTop: 12 }}>
-          {mensajeError}
         </div>
       )}
 
-      {lastImport && (
-        <div style={styles.info}>
-          <h3 style={{ marginBottom: 8 }}>Resultado de la importación</h3>
-          <div>Procesados: <strong>{lastImport.importados ?? '—'}</strong></div>
-          <div>Insertados: <strong>{lastImport.importados ?? '—'}</strong></div>
-          <div>Errores: <strong>{lastImport.errores ?? 0}</strong></div>
-          {lastImport.mensajeError && lastImport.mensajeError.length > 0 && (
-            <ul style={{ marginTop: 8, paddingLeft: 20 }}>
-              {lastImport.mensajeError.map((m, i) => (
-                <li key={i} style={{ fontSize: 13, color: 'var(--vs-rojo, #c0392b)' }}>{m}</li>
+      {mensajeError && <div className="importar-alert">{mensajeError}</div>}
+
+      <div className="importar-cards">
+        {/* Card: Columnas requeridas */}
+        <div className="importar-card">
+          <div className="importar-card-header">
+            <div className="importar-card-icon icon-cols">&#9776;</div>
+            <span className="importar-card-title">Columnas requeridas</span>
+          </div>
+          <div className="importar-card-body">
+            <ul className="col-list">
+              {COLUMNAS.map((col) => (
+                <li key={col.nombre} className="col-item">
+                  <span className="col-name">{col.nombre}</span>
+                  <span
+                    className={`col-badge ${col.obligatoria ? 'required' : 'optional'}`}
+                  >
+                    {col.obligatoria ? 'Obligatoria' : 'Opcional'}
+                  </span>
+                </li>
               ))}
             </ul>
-          )}
+          </div>
         </div>
-      )}
+
+        {/* Card: Resumen última importación */}
+        <div className="importar-card">
+          <div className="importar-card-header">
+            <div className="importar-card-icon icon-result">&#10003;</div>
+            <span className="importar-card-title">
+              Resumen de última importación
+            </span>
+          </div>
+          <div className="importar-card-body">
+            {lastImport ? (
+              <>
+                <div className="result-stats">
+                  <div className="result-row">
+                    <span className="result-label">Filas procesadas</span>
+                    <span className="result-value">
+                      {lastImport.procesados ?? lastImport.importados ?? '—'}
+                    </span>
+                  </div>
+                  <div className="result-row">
+                    <span className="result-label">Insertadas</span>
+                    <span className="result-value val-success">
+                      {lastImport.importados ?? '—'}
+                    </span>
+                  </div>
+                  <div className="result-row">
+                    <span className="result-label">Con errores</span>
+                    <span className="result-value val-error">
+                      {lastImport.errores ?? 0}
+                    </span>
+                  </div>
+                </div>
+                {lastImport.mensajeError &&
+                  lastImport.mensajeError.length > 0 && (
+                    <ul className="result-errors-list">
+                      {lastImport.mensajeError.map((m, i) => (
+                        <li key={i}>{m}</li>
+                      ))}
+                    </ul>
+                  )}
+              </>
+            ) : (
+              <div className="result-empty">
+                Todavía no se realizó ninguna importación
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

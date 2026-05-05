@@ -10,14 +10,15 @@ import {
 } from '../store/pagosSlice';
 import { procesarLote } from '../store/lotesSlice';
 import EditCbuCell from '../components/EditCbuCell';
+import './Dashboard.css';
 
 const BANCOS = ['CREDICOOP', 'GALICIA', 'SANTANDER'];
 const ESTADOS = ['PENDIENTE', 'PROCESADO', 'ELIMINADO'];
 
 const formatearFecha = (fechaISO) => {
-  if (!fechaISO) return '—';
+  if (!fechaISO) return '\u2014';
   const fecha = new Date(fechaISO);
-  if (isNaN(fecha)) return '—';
+  if (isNaN(fecha)) return '\u2014';
   return fecha.toLocaleDateString('es-AR', {
     day: '2-digit', month: '2-digit', year: 'numeric'
   });
@@ -25,6 +26,12 @@ const formatearFecha = (fechaISO) => {
 
 const formatearMonto = (monto) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(monto);
+
+const BADGE_CLASS = {
+  PENDIENTE: 'badge badge-pendiente',
+  PROCESADO: 'badge badge-procesado',
+  ELIMINADO: 'badge badge-eliminado',
+};
 
 export default function Dashboard() {
   const dispatch = useDispatch();
@@ -101,179 +108,194 @@ export default function Dashboard() {
   const todosSeleccionados =
     itemsOrdenados.length > 0 && seleccionados.length === itemsOrdenados.length;
 
+  const pendientesCount = items.filter((p) => p.estado === 'PENDIENTE').length;
+  const procesadosCount = items.filter((p) => p.estado === 'PROCESADO').length;
+
   return (
-    <div>
-      <h1 className="page-title">Dashboard de Pagos</h1>
+    <div className="dashboard-page">
+      {/* Stat Cards */}
+      <div className="dashboard-stats">
+        <div className="stat-card stat-warning">
+          <span className="stat-card-label">Pendientes</span>
+          <span className="stat-card-value">{pendientesCount}</span>
+        </div>
+        <div className="stat-card stat-accent">
+          <span className="stat-card-label">Total seleccionado</span>
+          <span className="stat-card-value accent">
+            {formatearMonto(montoTotalSeleccionados)}
+          </span>
+        </div>
+        <div className="stat-card stat-success">
+          <span className="stat-card-label">Procesados hoy</span>
+          <span className="stat-card-value">{procesadosCount}</span>
+        </div>
+      </div>
 
-      <div className="card">
-        <div className="filters">
-          <div className="filter-group">
-            <label>Banco</label>
-            <select
-              value={filtros.banco}
-              onChange={(e) => handleFiltro('banco', e.target.value)}
-            >
-              <option value="">Todos</option>
-              {BANCOS.map((b) => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label>Estado</label>
-            <select
-              value={filtros.estado}
-              onChange={(e) => handleFiltro('estado', e.target.value)}
-            >
-              {ESTADOS.map((e) => (
-                <option key={e} value={e}>{e}</option>
-              ))}
-              <option value="">Todos</option>
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label>Orden</label>
+      {/* Filter Chips */}
+      <div className="dashboard-filters">
+        <div className="chip-group">
+          <span className="filter-label">Banco</span>
+          <button
+            className={`chip${filtros.banco === '' ? ' active' : ''}`}
+            onClick={() => handleFiltro('banco', '')}
+          >
+            Todos
+          </button>
+          {BANCOS.map((b) => (
             <button
-              className={ordenDesc ? 'btn-primary' : 'btn-dark'}
-              style={{ padding: '8px 12px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
-              onClick={() => setOrdenDesc((prev) => !prev)}
-              title={ordenDesc ? 'Más recientes primero' : 'Más antiguos primero'}
+              key={b}
+              className={`chip${filtros.banco === b ? ' active' : ''}`}
+              onClick={() => handleFiltro('banco', b)}
             >
-              <span style={{ fontSize: 16 }}>{ordenDesc ? '↓' : '↑'}</span>
-              {ordenDesc ? 'Recientes' : 'Antiguos'}
+              {b}
             </button>
-          </div>
+          ))}
+        </div>
 
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'end' }}>
-            <div className="filter-group">
-              <label>Procesar con banco</label>
-              <select
-                value={bancoProceso}
-                onChange={(e) => setBancoProceso(e.target.value)}
-              >
-                {BANCOS.map((b) => (
-                  <option key={b} value={b}>{b}</option>
-                ))}
-              </select>
-            </div>
+        <div className="chip-group">
+          <span className="filter-label">Estado</span>
+          <button
+            className={`chip${filtros.estado === '' ? ' active' : ''}`}
+            onClick={() => handleFiltro('estado', '')}
+          >
+            Todos
+          </button>
+          {ESTADOS.map((e) => (
             <button
-              className="btn-primary"
-              onClick={handleProcesarClick}
-              disabled={loteLoading || seleccionados.length === 0}
+              key={e}
+              className={`chip${filtros.estado === e ? ' active' : ''}`}
+              onClick={() => handleFiltro('estado', e)}
             >
-              {loteLoading ? 'Procesando...' : `Procesar (${seleccionados.length})`}
+              {e}
             </button>
+          ))}
+        </div>
+
+        <button
+          className="btn-order"
+          onClick={() => setOrdenDesc((prev) => !prev)}
+          title={ordenDesc ? 'Más recientes primero' : 'Más antiguos primero'}
+        >
+          {ordenDesc ? '\u2193' : '\u2191'} {ordenDesc ? 'Recientes' : 'Antiguos'}
+        </button>
+      </div>
+
+      {/* Alerts */}
+      {error && <div className="dashboard-alert alert-error">{error}</div>}
+      {loteError && <div className="dashboard-alert alert-error">{loteError}</div>}
+      {ultimoLote && (
+        <div className="dashboard-alert alert-success">
+          Lote #{ultimoLote.id} generado correctamente.
+        </div>
+      )}
+
+      {/* Table Card */}
+      <div className="dashboard-table-card">
+        <div className="dashboard-table-header">
+          <span className="dashboard-table-title">
+            Pagos ({itemsOrdenados.length})
+          </span>
+          <div className="dashboard-table-actions">
             {seleccionados.length > 0 && (
               <button
-                className="btn-danger"
+                className="btn-eliminar"
                 onClick={() => setModalEliminar(true)}
                 disabled={loading}
               >
-                Eliminar seleccionados ({seleccionados.length})
+                Eliminar ({seleccionados.length})
               </button>
             )}
+            <button
+              className="btn-procesar"
+              onClick={handleProcesarClick}
+              disabled={loteLoading || seleccionados.length === 0}
+            >
+              {loteLoading ? 'Procesando...' : `Procesar lote (${seleccionados.length})`}
+            </button>
           </div>
         </div>
 
-        {error && <div className="error-msg">{error}</div>}
-        {loteError && <div className="error-msg">{loteError}</div>}
-        {ultimoLote && (
-          <div className="success-msg">
-            Lote #{ultimoLote.id} generado correctamente.
-          </div>
-        )}
-      </div>
-
-      <div style={{ overflowX: 'auto' }}>
-        <table>
-          <thead>
-            <tr>
-              <th style={{ width: 40 }}>
-                <input
-                  type="checkbox"
-                  checked={todosSeleccionados}
-                  onChange={toggleTodos}
-                />
-              </th>
-              <th>ID</th>
-              <th>Proveedor</th>
-              <th>CBU</th>
-              <th>Monto</th>
-              <th>Concepto</th>
-              <th>Fecha Pago</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr><td colSpan="8" style={{ textAlign: 'center' }}>Cargando...</td></tr>
-            )}
-            {!loading && itemsOrdenados.length === 0 && (
-              <tr><td colSpan="8" style={{ textAlign: 'center' }}>Sin resultados</td></tr>
-            )}
-            {!loading && itemsOrdenados.map((p) => (
-              <tr key={p.id}>
-                <td>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="dashboard-table">
+            <thead>
+              <tr>
+                <th style={{ width: 40 }}>
                   <input
                     type="checkbox"
-                    checked={seleccionados.includes(p.id)}
-                    onChange={() => dispatch(toggleSeleccion(p.id))}
+                    checked={todosSeleccionados}
+                    onChange={toggleTodos}
                   />
-                </td>
-                <td>{p.id}</td>
-                <td>{p.proveedor ? p.proveedor.nombre : '—'}</td>
-                <td><EditCbuCell pago={p} /></td>
-                <td>{formatearMonto(p.monto)}</td>
-                <td>{p.concepto}</td>
-                <td>{formatearFecha(p.fechaPago)}</td>
-                <td>{p.estado}</td>
+                </th>
+                <th>ID</th>
+                <th>Proveedor</th>
+                <th>CBU</th>
+                <th>Monto</th>
+                <th>Concepto</th>
+                <th>Fecha Pago</th>
+                <th>Estado</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan="8" className="table-empty">Cargando...</td>
+                </tr>
+              )}
+              {!loading && itemsOrdenados.length === 0 && (
+                <tr>
+                  <td colSpan="8" className="table-empty">Sin resultados</td>
+                </tr>
+              )}
+              {!loading && itemsOrdenados.map((p) => {
+                const cbuPresente = p.cbu || (p.proveedor && p.proveedor.cbu);
+                return (
+                  <tr
+                    key={p.id}
+                    className={seleccionados.includes(p.id) ? 'row-selected' : ''}
+                  >
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={seleccionados.includes(p.id)}
+                        onChange={() => dispatch(toggleSeleccion(p.id))}
+                      />
+                    </td>
+                    <td>{p.id}</td>
+                    <td>{p.proveedor ? p.proveedor.nombre : '\u2014'}</td>
+                    <td className={!cbuPresente ? 'cbu-missing' : ''}>
+                      <EditCbuCell pago={p} />
+                    </td>
+                    <td>{formatearMonto(p.monto)}</td>
+                    <td>{p.concepto}</td>
+                    <td>{formatearFecha(p.fechaPago)}</td>
+                    <td>
+                      <span className={BADGE_CLASS[p.estado] || 'badge'}>
+                        {p.estado}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
+      {/* Modal: Eliminar */}
       {modalEliminar && (
-        <div
-          onClick={() => setModalEliminar(false)}
-          style={{
-            position: 'fixed', inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: 'var(--modal-bg)', borderRadius: 8, padding: 28,
-              width: 420, maxWidth: '90vw',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-            }}
-          >
-            <h2 style={{ margin: '0 0 16px', color: 'var(--text-primary)', fontSize: 18 }}>
-              Confirmar eliminación
-            </h2>
-            <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)' }}>
+        <div className="modal-overlay" onClick={() => setModalEliminar(false)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal-title">Confirmar eliminación</h2>
+            <p className="modal-text">
               ¿Estás seguro que querés eliminar{' '}
               <strong>{seleccionados.length} pagos</strong>?
               {' '}Esta acción no se puede deshacer.
             </p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <button
-                className="btn-secondary"
-                onClick={() => setModalEliminar(false)}
-                style={{ padding: '8px 20px' }}
-              >
+            <div className="modal-actions">
+              <button className="btn-modal-cancel" onClick={() => setModalEliminar(false)}>
                 Cancelar
               </button>
-              <button
-                className="btn-danger"
-                onClick={handleEliminar}
-                style={{ padding: '8px 20px' }}
-              >
+              <button className="btn-modal-danger" onClick={handleEliminar}>
                 Eliminar
               </button>
             </div>
@@ -281,48 +303,24 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Modal: Confirmar procesamiento */}
       {modalConfirmar && (
-        <div
-          onClick={() => setModalConfirmar(false)}
-          style={{
-            position: 'fixed', inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: 'var(--modal-bg)', borderRadius: 8, padding: 28,
-              width: 420, maxWidth: '90vw',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-            }}
-          >
-            <h2 style={{ margin: '0 0 16px', color: 'var(--text-primary)', fontSize: 18 }}>
-              Confirmar procesamiento
-            </h2>
-            <p style={{ margin: '0 0 8px', color: 'var(--text-secondary)' }}>
+        <div className="modal-overlay" onClick={() => setModalConfirmar(false)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal-title">Confirmar procesamiento</h2>
+            <p className="modal-text">
               ¿Estás seguro que querés procesar{' '}
               <strong>{seleccionados.length} pagos</strong> con banco{' '}
               <strong>{bancoProceso}</strong>?
             </p>
-            <p style={{ margin: '0 0 24px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
+            <p className="modal-amount">
               Monto total: {formatearMonto(montoTotalSeleccionados)}
             </p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <button
-                className="btn-secondary"
-                onClick={() => setModalConfirmar(false)}
-                style={{ padding: '8px 20px' }}
-              >
+            <div className="modal-actions">
+              <button className="btn-modal-cancel" onClick={() => setModalConfirmar(false)}>
                 Cancelar
               </button>
-              <button
-                className="btn-primary"
-                onClick={handleConfirmar}
-                style={{ padding: '8px 20px' }}
-              >
+              <button className="btn-modal-confirm" onClick={handleConfirmar}>
                 Confirmar
               </button>
             </div>

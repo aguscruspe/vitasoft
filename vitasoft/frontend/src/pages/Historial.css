@@ -1,0 +1,327 @@
+.historial-page {
+  --dash-bg: #f0f4fa;
+  --dash-card: #ffffff;
+  --dash-text: #1A2B4C;
+  --dash-text-secondary: #6C757D;
+  --dash-border: #e2e8f0;
+  --dash-hover: #f8fafc;
+
+  background: var(--dash-bg);
+  min-height: calc(100vh - 56px);
+  padding: 28px 32px;
+}
+
+:root[data-theme="dark"] .historial-page {
+  --dash-bg: #0d1117;
+  --dash-card: #161b22;
+  --dash-text: #e6edf3;
+  --dash-text-secondary: #8b949e;
+  --dash-border: #30363d;
+  --dash-hover: #1c2128;
+}
+
+/* ── Page Title ────────────────────────────────── */
+
+.historial-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--dash-text);
+  margin-bottom: 24px;
+}
+
+/* ── Filter Chips ──────────────────────────────── */
+
+.historial-filters {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.historial-filters .chip-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.historial-filters .filter-label {
+  font-size: 11px;
+  color: var(--dash-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.historial-filters .chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--dash-border);
+  background: var(--dash-card);
+  color: var(--dash-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.historial-filters .chip:hover {
+  border-color: #007BFF;
+  color: #007BFF;
+}
+
+.historial-filters .chip.active {
+  background: #007BFF;
+  color: #fff;
+  border-color: #007BFF;
+}
+
+.historial-filters .btn-order {
+  background: var(--dash-card);
+  color: var(--dash-text);
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  transition: all 0.15s ease;
+}
+
+.historial-filters .btn-order:hover {
+  border-color: #007BFF;
+  color: #007BFF;
+}
+
+/* ── Lote Cards Grid ───────────────────────────── */
+
+.historial-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+.historial-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--dash-text-secondary);
+  font-size: 15px;
+  background: var(--dash-card);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* ── Individual Lote Card ──────────────────────── */
+
+.lote-card {
+  background: var(--dash-card);
+  border-radius: 12px;
+  padding: 22px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.lote-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.lote-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lote-card-id {
+  font-size: 13px;
+  color: var(--dash-text-secondary);
+  font-weight: 500;
+}
+
+/* ── Bank Badge ────────────────────────────────── */
+
+.bank-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.bank-badge.bank-credicoop {
+  background: #E8F5E9;
+  color: #2E7D32;
+}
+
+.bank-badge.bank-galicia {
+  background: #FFF3E0;
+  color: #E65100;
+}
+
+.bank-badge.bank-santander {
+  background: #FFEBEE;
+  color: #C62828;
+}
+
+.bank-badge.bank-default {
+  background: #E3F2FD;
+  color: #1565C0;
+}
+
+:root[data-theme="dark"] .bank-badge.bank-credicoop {
+  background: rgba(46, 125, 50, 0.18);
+  color: #66BB6A;
+}
+
+:root[data-theme="dark"] .bank-badge.bank-galicia {
+  background: rgba(230, 81, 0, 0.18);
+  color: #FFA726;
+}
+
+:root[data-theme="dark"] .bank-badge.bank-santander {
+  background: rgba(198, 40, 40, 0.18);
+  color: #EF5350;
+}
+
+:root[data-theme="dark"] .bank-badge.bank-default {
+  background: rgba(21, 101, 192, 0.18);
+  color: #42A5F5;
+}
+
+/* ── Card Details ──────────────────────────────── */
+
+.lote-card-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.lote-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lote-detail-label {
+  font-size: 11px;
+  color: var(--dash-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.lote-detail-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--dash-text);
+}
+
+.lote-detail-value.total {
+  color: #007BFF;
+}
+
+/* ── Card Actions ──────────────────────────────── */
+
+.lote-card-actions {
+  display: flex;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--dash-border);
+}
+
+.btn-download {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+}
+
+.btn-download:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-download-txt {
+  background: #E3F2FD;
+  color: #1565C0;
+}
+
+.btn-download-txt:hover:not(:disabled) {
+  background: #BBDEFB;
+}
+
+.btn-download-pdf {
+  background: #FFEBEE;
+  color: #C62828;
+}
+
+.btn-download-pdf:hover:not(:disabled) {
+  background: #FFCDD2;
+}
+
+:root[data-theme="dark"] .btn-download-txt {
+  background: rgba(21, 101, 192, 0.15);
+  color: #64B5F6;
+}
+
+:root[data-theme="dark"] .btn-download-txt:hover:not(:disabled) {
+  background: rgba(21, 101, 192, 0.25);
+}
+
+:root[data-theme="dark"] .btn-download-pdf {
+  background: rgba(198, 40, 40, 0.15);
+  color: #EF5350;
+}
+
+:root[data-theme="dark"] .btn-download-pdf:hover:not(:disabled) {
+  background: rgba(198, 40, 40, 0.25);
+}
+
+/* ── Loading Spinner ───────────────────────────── */
+
+.historial-loading {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--dash-text-secondary);
+  font-size: 15px;
+}
+
+/* ── Responsive ────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .historial-page {
+    padding: 16px;
+  }
+
+  .historial-filters {
+    gap: 12px;
+  }
+
+  .historial-filters .btn-order {
+    margin-left: 0;
+  }
+
+  .historial-grid {
+    grid-template-columns: 1fr;
+  }
+}
